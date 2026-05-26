@@ -1,0 +1,128 @@
+/**
+ * RAG Orchestration Service — The Brain
+ * 
+ * What this does: Coordinates all the pieces together.
+ * Receives question → checks cache → retrieves chunks →
+ * scores confidence → generates answer → logs everything.
+ * 
+ * Plain English: This is the conductor of the orchestra.
+ * The embedding service, retrieval service, and generation service
+ * are each great at one thing. This service tells them when to play
+ * and in what order. Every user question flows through here.
+ */
+
+const { embedText } = require('./embedding.service');
+const { retrieveRelevantChunks } = require('./retrieval.service');
+const { generateAnswer } = require('./generation.service');
+const { cacheAnswer, getCachedAnswer } = require('../config/redis');
+const { query } = require('../config/database');
+const { logger } = require('../utils/logger');
+const crypto = require('crypto');
+
+const CONFIDENCE_THRESHOLD = parseFloat(process.env.CONFIDENCE_THRESHOLD) || 0.90;
+
+/**
+ * Main entry point — handles a user question end to end
+ */
+async function handleQuery(question, userId) {
+  const startTime = Date.now();
+
+  // Step 1: Check cache first — free answer if it exists
+  const questionHash = crypto
+    .createHash('md5')
+    .update(question.toLowerCase().trim())
+    .digest('hex');
+
+  const cached = await getCachedAnswer(questionHash);
+  if (cached) {
+    logger.info({ userId, questionHash, source: 'cache' }, 'Cache hit');
+    await logQuery({ userId, question, ...cached, fromCache: true });
+    return { ...cached, fromCache: true };
+  }
+
+  // Step 2: Retrieve relevant document chunks from Pinecone
+  const { chunks, confidence, shouldEscalate } = await retrieveRelevantChunks(question);
+
+  // Step 3: Escalate if confidence is too low
+  if (shouldEscalate || chunks.length === 0) {
+    const escalationResult = {
+      answer: null,
+      nudge: null,
+      confidence,
+      confidencePercent: Math.round(confidence * 100),
+      shouldEscalate: true,
+      sources: [],
+      responseTimeMs: Date.now() - startTime,
+    };
+
+    await logQuery({ userId, question, ...escalationResult });
+    return escalationResult;
+  }
+
+  // Step 4: Generate answer from retrieved chunks
+  const { answer, nudge, isInsufficient, tokens, cost } = await generateAnswer(
+    question, chunks, userId
+  );
+
+  // Step 5: Handle cases where Claude says context is insufficient
+  if (isInsufficient) {
+    const insufficientResult = {
+      answer: null,
+      nudge: null,
+      confidence,
+      confidencePercent: Math.round(confidence * 100),
+      shouldEscalate: true,
+      sources: [],
+      responseTimeMs: Date.now() - startTime,
+    };
+    await logQuery({ userId, question, ...insufficientResult });
+    return insufficientResult;
+  }
+
+  // Step 6: Package the final result
+  const result = {
+    answer,
+    nudge,
+    confidence,
+    confidencePercent: Math.round(confidence * 100),
+    shouldEscalate: false,
+    sources: chunks.map(c => ({
+      filename: c.source,
+      relevanceScore: Math.round(c.score * 100),
+    })),
+    charCount: answer.length,
+    responseTimeMs: Date.now() - startTime,
+    tokens,
+    cost,
+  };
+
+  // Step 7: Cache the answer for 24 hours
+  await cacheAnswer(questionHash, result);
+
+  // Step 8: Log to database for analytics and compliance
+  await logQuery({ userId, question, ...result });
+
+  return result;
+}
+
+async function logQuery({ userId, question, answer, confidence, shouldEscalate, sources, responseTimeMs, tokens }) {
+  try {
+    await query(`
+      INSERT INTO queries (user_id, question, answer, confidence_score, was_escalated, source_documents, tokens_used, response_time_ms)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `, [
+      userId,
+      question,
+      answer,
+      confidence,
+      shouldEscalate,
+      JSON.stringify(sources || []),
+      tokens?.input + tokens?.output || 0,
+      responseTimeMs,
+    ]);
+  } catch (error) {
+    logger.error({ error }, 'Failed to log query');
+  }
+}
+
+module.exports = { handleQuery };

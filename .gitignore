@@ -1,0 +1,6 @@
+node_modules/
+siso-live/node_modules/
+.env
+siso-live/.env
+*.log
+extracted/
