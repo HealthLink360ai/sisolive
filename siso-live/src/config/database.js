@@ -24,10 +24,13 @@ async function runMigrations() {
       name VARCHAR(255) NOT NULL,
       role VARCHAR(50) DEFAULT 'user',
       department VARCHAR(255),
+      password_hash VARCHAR(255),
       first_login BOOLEAN DEFAULT true,
       created_at TIMESTAMP DEFAULT NOW(),
       last_active TIMESTAMP DEFAULT NOW()
     )`);
+    // Add password_hash to any existing tables that were created before this column was added
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255)`);
 
     await client.query(`CREATE TABLE IF NOT EXISTS documents (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -2044,7 +2044,7 @@ const { useState, useRef, useEffect } = React;
    In production: calls the real API endpoints.
    Toggle via window.SISO_API_BASE_URL
    =========================================== */
-const API_BASE = window.SISO_API_BASE_URL || 'http://localhost:3001';
+const API_BASE = window.SISO_API_BASE_URL || 'https://sisolive.vercel.app';
 
 // Auth token management
 const Auth = {
@@ -2096,11 +2096,16 @@ const AdminAPI = {
   escalations: () => apiCall('/api/admin/analytics/escalations'),
   feedback: () => apiCall('/api/admin/analytics/feedback'),
   documents: () => apiCall('/api/admin/documents'),
-  uploadDocument: (formData) => fetch(`${API_BASE}/api/upload/document`, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${Auth.getToken()}` },
-    body: formData,
-  }).then(r => r.json()),
+  uploadDocument: async (formData) => {
+    const r = await fetch(`${API_BASE}/api/upload/document`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${Auth.getToken()}` },
+      body: formData,
+    });
+    const data = await r.json().catch(() => ({ error: 'Upload failed' }));
+    if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
+    return data;
+  },
 };
 
 /* ===========================================
@@ -2189,15 +2194,22 @@ function LoginScreen({ onLogin }) {
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    if (!email || !pass) {setErr('Please enter your email and password.');return;}
-    if (!email.includes('@')) {setErr('Please enter a valid AbbVie email address.');return;}
-    setErr('');setLoading(true);
-    // Using queryRAG — switches automatically between live API and demo simulation
-    queryRAG(q).then((result) => {
+  const handleLogin = async () => {
+    if (!email || !pass) { setErr('Please enter your email and password.'); return; }
+    if (!email.includes('@')) { setErr('Please enter a valid AbbVie email address.'); return; }
+    setErr(''); setLoading(true);
+    try {
+      const result = await AuthAPI.login(email, pass);
+      Auth.setToken(result.token);
+      const user = result.user;
+      const initials = (user.name || email).split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+      Auth.setUser({ ...user, initials });
+      onLogin({ ...user, initials });
+    } catch (e) {
+      setErr(e.message || 'Login failed. Please check your credentials.');
+    } finally {
       setLoading(false);
-      onLogin({ name: 'Jane Doe', initials: 'JD', role: 'Procurement', email });
-    }, 1200);
+    }
   };
 
   return (
@@ -2443,30 +2455,41 @@ function ChatScreen({ user, onAdmin }) {
     setInput('');
     setMessages((m) => [...m, { id: Date.now(), role: 'user', text: q }]);
     setTyping(true);
-    // Using queryRAG — switches automatically between live API and demo simulation
     queryRAG(q).then((result) => {
-      
       setTyping(false);
       setMessages((m) => [...m, {
         id: Date.now() + 1, role: 'ai',
         text: result.answer || null,
-        conf: result.confidencePercent || result.confidence, source: result.source, nudge: result.nudge,
+        conf: result.confidencePercent ?? result.confidence,
+        source: result.sources?.[0]?.filename || null,
+        nudge: result.nudge,
+        escalated: result.shouldEscalate || false,
+        queryId: result.queryId || null,
         feedback: null, showComment: false, comment: '',
-        chars: result.answer ? result.answer.length : null
+        chars: result.answer ? result.answer.length : null,
       }]);
-    
+    }).catch((err) => {
+      setTyping(false);
+      console.error('Query failed:', err);
+    });
   };
 
-  const setFeedback = (id, val) => {
+  const setFeedback = (id, val, queryId) => {
     setMessages((m) => m.map((msg) =>
-    msg.id === id ? { ...msg, feedback: val, showComment: val === 'down' } : msg
+      msg.id === id ? { ...msg, feedback: val, showComment: val === 'down' } : msg
     ));
+    if (queryId) {
+      ChatAPI.feedback(queryId, val, '').catch(err => console.error('Feedback failed:', err));
+    }
   };
 
-  const submitComment = (id) => {
+  const submitComment = (id, queryId, comment) => {
     setMessages((m) => m.map((msg) =>
-    msg.id === id ? { ...msg, showComment: false, feedback: 'submitted' } : msg
+      msg.id === id ? { ...msg, showComment: false, feedback: 'submitted' } : msg
     ));
+    if (queryId) {
+      ChatAPI.feedback(queryId, 'down', comment).catch(err => console.error('Feedback failed:', err));
+    }
   };
 
   const updateComment = (id, val) => {
@@ -2603,7 +2626,7 @@ function ChatScreen({ user, onAdmin }) {
                     }
 
                     {/* high-confidence answer */}
-                    {msg.conf !== null && msg.conf >= 90 &&
+                    {msg.conf !== null && msg.conf >= 90 && msg.text && !msg.escalated &&
                     <div className="ai-card">
                         <div className="ai-card-body">{msg.text}</div>
                         <div className="ai-card-foot">
@@ -2627,8 +2650,8 @@ function ChatScreen({ user, onAdmin }) {
                       </div>
                     }
 
-                    {/* low-confidence */}
-                    {msg.conf !== null && msg.conf < 90 &&
+                    {/* low-confidence / escalated */}
+                    {msg.escalated &&
                     <div className="ai-card">
                         <div className="ai-card-body low-conf">
                           I don't have enough verified information to answer this with sufficient confidence. For accurate guidance, please reach out to the SISO support desk.
@@ -2651,13 +2674,13 @@ function ChatScreen({ user, onAdmin }) {
                         <span className="fb-lbl">Was this helpful?</span>
                         <button
                         className={`fb-btn ${msg.feedback === 'up' || msg.feedback === 'submitted' ? 'up-on' : ''}`}
-                        onClick={() => setFeedback(msg.id, 'up')}
+                        onClick={() => setFeedback(msg.id, 'up', msg.queryId)}
                         aria-label="Thumbs up">
                           <i className="ti ti-thumb-up" style={{ fontSize: 14 }} aria-hidden="true" />
                         </button>
                         <button
                         className={`fb-btn ${msg.feedback === 'down' ? 'dn-on' : ''}`}
-                        onClick={() => setFeedback(msg.id, 'down')}
+                        onClick={() => setFeedback(msg.id, 'down', msg.queryId)}
                         aria-label="Thumbs down">
                           <i className="ti ti-thumb-down" style={{ fontSize: 14 }} aria-hidden="true" />
                         </button>
@@ -2679,7 +2702,7 @@ function ChatScreen({ user, onAdmin }) {
                         placeholder="What was wrong with this answer? (optional, helps us improve)"
                         value={msg.comment}
                         onChange={(e) => updateComment(msg.id, e.target.value)} />
-                        <button className="fb-submit" onClick={() => submitComment(msg.id)}>
+                        <button className="fb-submit" onClick={() => submitComment(msg.id, msg.queryId, msg.comment)}>
                           Submit feedback
                           <div style={{ width: 11, height: 11 }}><Icons.arrow /></div>
                         </button>
@@ -2687,7 +2710,7 @@ function ChatScreen({ user, onAdmin }) {
                     }
 
                     {/* nudge */}
-                    {msg.conf >= 90 && msg.nudge &&
+                    {!msg.escalated && msg.nudge &&
                     <div className="nudge">
                         <div className="nudge-ic"><div style={{ width: 16, height: 16 }}><Icons.sparkles /></div></div>
                         <span>{msg.nudge}</span>
@@ -2696,7 +2719,7 @@ function ChatScreen({ user, onAdmin }) {
                     }
 
                     {/* escalate */}
-                    {msg.conf !== null && msg.conf < 90 &&
+                    {msg.escalated &&
                     <div className="escalate-card">
                         <div className="escalate-ic"><div style={{ width: 16, height: 16 }}><Icons.headset /></div></div>
                         <div className="escalate-body">
@@ -3107,6 +3130,32 @@ function AdminUsers() {
 }
 
 function AdminUpload() {
+  const fileInputRef = React.useRef();
+  const [uploads, setUploads] = React.useState([]);
+  const [dragging, setDragging] = React.useState(false);
+
+  const handleFiles = async (files) => {
+    for (const file of Array.from(files)) {
+      const id = Date.now() + Math.random();
+      setUploads(u => [...u, { id, name: file.name, status: 'Uploading', pct: 10, error: null }]);
+      const fd = new FormData();
+      fd.append('file', file);
+      try {
+        const result = await AdminAPI.uploadDocument(fd);
+        setUploads(u => u.map(x => x.id === id
+          ? { ...x, status: result.status === 'active' ? 'Indexed' : 'Processing', pct: result.status === 'active' ? 100 : 75, chunkCount: result.chunkCount }
+          : x));
+      } catch (err) {
+        setUploads(u => u.map(x => x.id === id ? { ...x, status: 'Error', pct: 0, error: err.message } : x));
+      }
+    }
+  };
+
+  const onDrop = (e) => {
+    e.preventDefault(); setDragging(false);
+    handleFiles(e.dataTransfer.files);
+  };
+
   return (
     <>
       <div className="panel">
@@ -3115,12 +3164,27 @@ function AdminUpload() {
           <span className="panel-tag">CHUNKED &amp; EMBEDDED ON UPLOAD</span>
         </div>
         <div className="panel-body" style={{ padding: '20px' }}>
-          <div className="upload-zone" style={{ padding: '44px 24px' }}>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.csv,.txt"
+            multiple
+            style={{ display: 'none' }}
+            onChange={e => handleFiles(e.target.files)}
+          />
+          <div
+            className={`upload-zone${dragging ? ' dragging' : ''}`}
+            style={{ padding: '44px 24px', cursor: 'pointer' }}
+            onClick={() => fileInputRef.current?.click()}
+            onDragOver={e => { e.preventDefault(); setDragging(true); }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={onDrop}
+          >
             <div className="up-ic"><div style={{ width: 22, height: 22 }}><Icons.upload /></div></div>
-            <div className="up-h">Drop files to ingest</div>
-            <div className="up-p">Files are automatically chunked and embedded into the RAG index. PDFs are OCR'd, videos transcribed.</div>
+            <div className="up-h">Drop files or click to upload</div>
+            <div className="up-p">Files are automatically chunked and embedded into the RAG index. Supported types below.</div>
             <div className="file-pills">
-              {['PDF', 'CSV', 'DOCX', 'XLSX', 'TXT', 'MD', 'MP4', 'MOV', 'WAV'].map(t => <span key={t} className="file-pill">{t}</span>)}
+              {['PDF', 'CSV', 'TXT'].map(t => <span key={t} className="file-pill">{t}</span>)}
             </div>
           </div>
         </div>
@@ -3128,22 +3192,22 @@ function AdminUpload() {
 
       <div className="two-col">
         <div className="panel">
-          <div className="panel-head"><div className="panel-title"><span className="panel-title-ic"><Icons.refresh /></span>Recent <em>uploads</em></div><span className="panel-tag">PROCESSING QUEUE</span></div>
+          <div className="panel-head"><div className="panel-title"><span className="panel-title-ic"><Icons.refresh /></span>Recent <em>uploads</em></div><span className="panel-tag">THIS SESSION</span></div>
           <div className="panel-body">
-            {[
-              { name: 'FY26_Q1_Supplier_Report.pdf', time: 'just now', status: 'Processing', pct: 62, warn: false },
-              { name: 'Carbon_Methodology_v3.docx', time: '4 min ago', status: 'Embedding', pct: 88, warn: false },
-              { name: 'Tier1_Audit_Results.xlsx', time: '12 min ago', status: 'Indexed', pct: 100, warn: false },
-              { name: 'Onboarding_Webinar.mp4', time: '38 min ago', status: 'Transcribing', pct: 41, warn: false }
-            ].map(f =>
-              <div key={f.name} className="upload-row">
+            {uploads.length === 0 && (
+              <div style={{ padding: '20px', color: 'var(--text-2)', fontSize: 13 }}>No uploads yet this session.</div>
+            )}
+            {uploads.map(f =>
+              <div key={f.id} className="upload-row">
                 <div className="upload-row-ic"><Icons.files /></div>
                 <div className="upload-row-main">
                   <div className="upload-row-name">{f.name}</div>
-                  <div className="upload-row-meta">{f.status} · {f.time}</div>
-                  <div className="upload-progress"><div className="upload-progress-fill" style={{ width: `${f.pct}%` }} /></div>
+                  <div className="upload-row-meta" style={{ color: f.error ? 'var(--warn)' : undefined }}>
+                    {f.error || f.status}{f.chunkCount ? ` · ${f.chunkCount} chunks` : ''}
+                  </div>
+                  {!f.error && <div className="upload-progress"><div className="upload-progress-fill" style={{ width: `${f.pct}%` }} /></div>}
                 </div>
-                <span className="upload-pct">{f.pct}%</span>
+                <span className="upload-pct">{f.error ? '!' : `${f.pct}%`}</span>
               </div>
             )}
           </div>
@@ -3534,8 +3598,14 @@ function App() {
 
   const handleLogin = (u) => {
     setUser(u);
-    if (firstLogin) {setScreen('onboard');setFirstLogin(false);} else
-    setScreen('chat');
+    if (u.role === 'admin') {
+      setScreen('admin');
+    } else if (u.first_login !== false) {
+      setScreen('onboard');
+      setFirstLogin(false);
+    } else {
+      setScreen('chat');
+    }
   };
 
   return (
