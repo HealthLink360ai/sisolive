@@ -30,6 +30,10 @@ async function retrieveRelevantChunks(question) {
 
   // Step 2: Search Pinecone for similar vectors
   const index = getPineconeIndex();
+  if (!index) {
+    logger.warn('Pinecone unavailable — returning empty retrieval result');
+    return { chunks: [], confidence: 0, shouldEscalate: true, topScore: 0 };
+  }
   const searchResults = await index.query({
     vector: questionVector,
     topK: MAX_CHUNKS,

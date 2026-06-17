@@ -13,24 +13,26 @@ async function initRedis() {
 }
 
 function getRedis() {
-  if (!redis) throw new Error('Redis not initialized');
-  return redis;
+  return redis; // may be null if unavailable
 }
 
 async function cacheAnswer(hash, data) {
+  if (!redis) return;
   const ttl = parseInt(process.env.CACHE_TTL_SECONDS) || 86400;
-  await getRedis().setex(`answer:${hash}`, ttl, JSON.stringify(data));
+  await redis.setex(`answer:${hash}`, ttl, JSON.stringify(data));
 }
 
 async function getCachedAnswer(hash) {
-  const cached = await getRedis().get(`answer:${hash}`);
+  if (!redis) return null;
+  const cached = await redis.get(`answer:${hash}`);
   return cached ? JSON.parse(cached) : null;
 }
 
 async function invalidateAnswerCache() {
-  const keys = await getRedis().keys('answer:*');
+  if (!redis) return;
+  const keys = await redis.keys('answer:*');
   if (keys.length > 0) {
-    await getRedis().del(...keys);
+    await redis.del(...keys);
     logger.info(`Cache invalidated: ${keys.length} answers cleared`);
   }
 }

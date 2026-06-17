@@ -22,8 +22,7 @@ async function initPinecone() {
 }
 
 function getPineconeIndex() {
-  if (!pineconeIndex) throw new Error('Pinecone not initialized');
-  return pineconeIndex;
+  return pineconeIndex; // may be null if unavailable
 }
 
 module.exports = { initPinecone, getPineconeIndex };

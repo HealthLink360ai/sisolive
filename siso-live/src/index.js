@@ -119,11 +119,19 @@ async function startServer() {
     await connectDatabase();
     logger.info('✓ PostgreSQL connected');
 
-    await initPinecone();
-    logger.info('✓ Pinecone vector database connected');
+    try {
+      await initPinecone();
+      logger.info('✓ Pinecone vector database connected');
+    } catch (err) {
+      logger.warn({ err }, '⚠ Pinecone unavailable — RAG search disabled, continuing');
+    }
 
-    await initRedis();
-    logger.info('✓ Redis cache connected');
+    try {
+      await initRedis();
+      logger.info('✓ Redis cache connected');
+    } catch (err) {
+      logger.warn({ err }, '⚠ Redis unavailable — answer caching disabled, continuing');
+    }
 
     app.listen(PORT, () => {
       logger.info(`✓ SISO Live! API running on port ${PORT}`);

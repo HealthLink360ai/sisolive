@@ -60,6 +60,11 @@ async function ingestDocument(filePath, documentId, filename, uploadedBy) {
 
     // Step 4: Store in Pinecone with metadata
     const index = getPineconeIndex();
+    if (!index) {
+      logger.warn({ documentId }, 'Pinecone unavailable — skipping vector storage');
+      await query(`UPDATE documents SET status = 'active', chunk_count = $1, processed_at = NOW() WHERE id = $2`, [chunks.length, documentId]);
+      return { success: true, chunkCount: chunks.length, processingTimeMs: Date.now() - startTime };
+    }
     const vectors = chunks.map((chunk, i) => ({
       id: `${documentId}#chunk-${i}`,
       values: embeddings[i],
