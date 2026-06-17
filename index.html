@@ -456,7 +456,15 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
 
 /* ---- AbbVie bot · stands in the gap between hero text and the sign-in card ---- */
 .login-bot {
-  display: none;
+  position: absolute;
+  z-index: 4;
+  bottom: 0;
+  right: calc(43% - var(--login-bot-nudge, 5px));
+  width: min(clamp(300px, 37.5vw, 450px), 45vh);
+  pointer-events: none;
+  filter: drop-shadow(0 14px 16px rgba(11,19,32,0.18));
+  animation: botFloat 5.5s ease-in-out infinite;
+  will-change: transform;
 }
 .login-bot img { width: 100%; height: auto; display: block; }
 @keyframes botFloat {
