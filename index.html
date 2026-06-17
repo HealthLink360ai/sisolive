@@ -291,8 +291,7 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
   height: 100%;
   width: auto;
   display: block;
-  /* white PNG → AbbVie navy via filter */
-  filter: brightness(0) saturate(100%) invert(9%) sepia(40%) saturate(4200%) hue-rotate(218deg) brightness(70%) contrast(110%);
+  filter: invert(1);
 }
 .login-lockup .lockup-sep {
   width: 1px; height: 26px;
@@ -428,18 +427,25 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
   min-width: 0;
 }
 .login-hero-photo {
-  width: 180px;
-  max-width: 180px;
+  width: 220px;
+  max-width: 220px;
   flex-shrink: 0;
   pointer-events: none;
   align-self: end;
+  border-radius: 14px;
+  overflow: hidden;
+  position: relative;
 }
 .login-hero-photo img {
   width: 100%;
   height: auto;
   display: block;
-  mask-image: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.55) 14%, rgba(0,0,0,1) 38%);
-  -webkit-mask-image: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.55) 14%, rgba(0,0,0,1) 38%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 22%, black 80%, transparent 100%),
+              linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 22%, black 80%, transparent 100%),
+                      linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%);
+  mask-composite: intersect;
+  -webkit-mask-composite: source-in;
 }
 
 /* Narrow viewports · hide the photo so feats keep their room */
@@ -450,15 +456,7 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
 
 /* ---- AbbVie bot · stands in the gap between hero text and the sign-in card ---- */
 .login-bot {
-  position: absolute;
-  z-index: 4;
-  bottom: 0;
-  right: calc(43% - var(--login-bot-nudge, 5px));
-  width: min(clamp(300px, 37.5vw, 450px), 45vh);
-  pointer-events: none;
-  filter: drop-shadow(0 14px 16px rgba(11,19,32,0.18));
-  animation: botFloat 5.5s ease-in-out infinite;
-  will-change: transform;
+  display: none;
 }
 .login-bot img { width: 100%; height: auto; display: block; }
 @keyframes botFloat {
@@ -2543,6 +2541,28 @@ function LoginScreen({ onLogin, signedOut, onDismissSignedOut }) {
             confidence, and make faster decisions across supplier inclusion
             and sustainability work.
           </p>
+          <div className="login-bottom-row">
+            <div className="login-feats">
+              <div className="login-feat f-1">
+                <div className="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1L10 6H15L11 9.5L12.5 14.5L8 11.5L3.5 14.5L5 9.5L1 6H6L8 1Z" fill="currentColor"/></svg></div>
+                <h5>Verified sources</h5>
+                <p>Every answer sourced directly from AbbVie-approved documents.</p>
+              </div>
+              <div className="login-feat f-2">
+                <div className="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5"/><path d="M8 5v3l2 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg></div>
+                <h5>Instant answers</h5>
+                <p>Get precise guidance in seconds, not days.</p>
+              </div>
+              <div className="login-feat f-3">
+                <div className="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h12M8 2v12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg></div>
+                <h5>Confidence score</h5>
+                <p>Know exactly how certain each answer is before you act.</p>
+              </div>
+            </div>
+            <div className="login-hero-photo">
+              <img src="assets/hero-people.png" alt="AbbVie colleagues" />
+            </div>
+          </div>
         </div>
       </div>
 
