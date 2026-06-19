@@ -46,8 +46,8 @@ async function ingestDocument(filePath, documentId, filename, uploadedBy) {
       throw new Error(`Unsupported file type: ${fileType}`);
     }
 
-    if (!rawText || rawText.trim().length < 100) {
-      throw new Error('Document appears to be empty or unreadable');
+    if (!rawText || rawText.trim().length < 20) {
+      throw new Error('No text could be extracted. This PDF may be image-based (scanned). Please upload a text-based PDF exported from Word or Google Docs.');
     }
 
     logger.info({ documentId, textLength: rawText.length }, 'Step 1 complete: text extracted');
