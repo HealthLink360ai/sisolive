@@ -125,7 +125,7 @@ router.get('/documents', async (req, res) => {
   try {
     const result = await query(`
       SELECT d.id, d.filename, d.file_type, d.file_size_bytes, d.chunk_count,
-             d.status, d.uploaded_at, d.processed_at, u.name as uploaded_by
+             d.status, d.has_vectors, d.uploaded_at, d.processed_at, u.name as uploaded_by
       FROM documents d
       LEFT JOIN users u ON d.uploaded_by = u.id
       ORDER BY d.uploaded_at DESC
@@ -150,6 +150,69 @@ router.delete('/documents/:id', async (req, res) => {
   } catch (error) {
     logger.error({ error }, 'Document delete failed');
     res.status(500).json({ error: 'Failed to delete document' });
+  }
+});
+
+// GET /api/admin/diagnostics — system health check: Pinecone + Cohere + test query
+router.get('/diagnostics', async (req, res) => {
+  const { getPineconeIndex } = require('../config/pinecone');
+  const { embedText } = require('../services/embedding.service');
+
+  const report = {
+    timestamp: new Date().toISOString(),
+    pinecone: { status: 'unknown', vectorCount: null, error: null },
+    cohere: { status: 'unknown', error: null },
+    testQuery: null,
+  };
+
+  try {
+    const index = getPineconeIndex();
+    if (!index) {
+      report.pinecone.status = 'not_initialized';
+    } else {
+      const stats = await index.describeIndexStats();
+      report.pinecone.status = 'connected';
+      report.pinecone.vectorCount = stats.totalRecordCount ?? stats.totalVectorCount ?? 0;
+    }
+  } catch (e) {
+    report.pinecone.status = 'error';
+    report.pinecone.error = e.message;
+  }
+
+  try {
+    const testVector = await embedText('What is supplier inclusion?', 'search_query');
+    report.cohere.status = 'connected';
+
+    const index = getPineconeIndex();
+    if (index && report.pinecone.status === 'connected') {
+      const result = await index.query({ vector: testVector, topK: 3, includeMetadata: true });
+      report.testQuery = {
+        question: 'What is supplier inclusion?',
+        matches: (result.matches || []).map(m => ({
+          score: parseFloat(m.score.toFixed(4)),
+          source: m.metadata?.filename,
+          preview: (m.metadata?.text || '').slice(0, 200),
+        })),
+      };
+    }
+  } catch (e) {
+    report.cohere.status = 'error';
+    report.cohere.error = e.message;
+  }
+
+  res.json(report);
+});
+
+// POST /api/admin/documents/:id/reingest — re-index from stored raw text
+router.post('/documents/:id/reingest', async (req, res) => {
+  const { reindexDocument } = require('../services/ingestion.service');
+  try {
+    const result = await reindexDocument(req.params.id);
+    logger.info({ documentId: req.params.id, adminId: req.user.id }, 'Document re-indexed by admin');
+    res.json({ success: true, ...result });
+  } catch (error) {
+    logger.error({ error }, 'Document re-index failed');
+    res.status(500).json({ error: error.message || 'Re-index failed' });
   }
 });
 

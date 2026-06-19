@@ -57,6 +57,8 @@ async function runMigrations() {
       processed_at TIMESTAMP,
       error_message TEXT
     )`);
+    await client.query(`ALTER TABLE documents ADD COLUMN IF NOT EXISTS raw_text TEXT`);
+    await client.query(`ALTER TABLE documents ADD COLUMN IF NOT EXISTS has_vectors BOOLEAN DEFAULT false`);
 
     await client.query(`CREATE TABLE IF NOT EXISTS queries (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
