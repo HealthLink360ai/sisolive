@@ -1098,6 +1098,7 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
   display: flex; align-items: center; justify-content: center;
   font-family: var(--mono); font-size: 8.5px; font-weight: 500;
   color: var(--text);
+  overflow: hidden;
 }
 .conf-text {
   font-family: var(--mono); font-size: 11px;
@@ -1333,10 +1334,10 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
 .assistant-stage {
   position: relative;
   border-radius: var(--r-lg);
-  background: var(--ink);
+  background: var(--paper-3);
   overflow: hidden;
   aspect-ratio: 1 / 1;
-  border: 1px solid var(--rule-2);
+  border: 1px solid var(--rule);
   box-shadow: var(--shadow-card);
   transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
@@ -1353,8 +1354,8 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
   position: absolute; inset: 0; z-index: 0;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
   background:
-    radial-gradient(ellipse at 50% 35%, rgba(21,183,154,0.16) 0%, transparent 60%),
-    repeating-linear-gradient(45deg, rgba(244,241,234,0.035) 0 11px, rgba(244,241,234,0.075) 11px 22px);
+    radial-gradient(ellipse at 50% 35%, rgba(21,183,154,0.10) 0%, transparent 60%),
+    repeating-linear-gradient(45deg, rgba(11,19,32,0.025) 0 11px, rgba(11,19,32,0.04) 11px 22px);
   text-align: center; padding: 24px;
   overflow: hidden;
 }
@@ -1382,14 +1383,14 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
 .assistant-stage .stage-ph .cap {
   position: relative; z-index: 1;
   font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.06em;
-  color: var(--text-on-ink-2); line-height: 1.6;
+  color: var(--text-2); line-height: 1.6;
 }
-.assistant-stage .stage-ph .cap b { color: var(--text-on-ink); font-weight: 500; }
+.assistant-stage .stage-ph .cap b { color: var(--text); font-weight: 500; }
 .assistant-stage .stage-ph .slot-hint {
   position: relative; z-index: 1;
   font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
-  color: var(--text-on-ink-3);
-  border: 1px dashed rgba(244,241,234,0.18); border-radius: 999px;
+  color: var(--text-3);
+  border: 1px dashed var(--rule); border-radius: 999px;
   padding: 3px 10px;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -2474,7 +2475,7 @@ const Icons = {
    ============================================================ */
 
 function ConfidenceArc({ value }) {
-  const color = value >= 90 ? 'var(--teal)' : 'var(--warn)';
+  const color = value >= 75 ? 'var(--teal)' : 'var(--warn)';
   const bg = `conic-gradient(${color} ${value * 3.6}deg, var(--paper-2) 0deg)`;
   return (
     <div className="conf-arc" style={{ background: bg }}>
@@ -2813,10 +2814,14 @@ function ChatScreen({ user, onAdmin, onLogout }) {
       const result = await ChatAPI.query(q, history);
       setTyping(false);
       const answer = result.answer || result.text || null;
-      const conf = result.confidence !== undefined ? result.confidence : (answer ? 95 : 60);
+      const conf = result.confidencePercent != null
+        ? result.confidencePercent
+        : result.confidence != null
+          ? Math.round(result.confidence * 100)
+          : (answer ? 95 : 60);
       setMessages((m) => [...m, {
         id: Date.now() + 1, role: 'ai',
-        text: conf >= 90 ? answer : null,
+        text: conf >= 45 ? answer : null,
         conf, source: result.source || null, nudge: result.nudge || null,
         feedback: null, showComment: false, comment: '',
         chars: answer ? answer.length : null
@@ -2971,7 +2976,7 @@ function ChatScreen({ user, onAdmin, onLogout }) {
                       </div>
                     )}
 
-                    {msg.conf !== null && msg.conf >= 90 && (
+                    {msg.conf !== null && msg.conf >= 45 && (
                       <div className="ai-card">
                         <div className="ai-card-body">{msg.text}</div>
                         <div className="ai-card-foot">
@@ -2995,7 +3000,7 @@ function ChatScreen({ user, onAdmin, onLogout }) {
                       </div>
                     )}
 
-                    {msg.conf !== null && msg.conf < 90 && (
+                    {msg.conf !== null && msg.conf < 45 && (
                       <div className="ai-card">
                         <div className="ai-card-body low-conf">
                           I don't have enough verified information to answer this confidently. For accurate guidance, please reach out to the SISO support desk — they're the right resource for this.
@@ -3049,7 +3054,7 @@ function ChatScreen({ user, onAdmin, onLogout }) {
                       </div>
                     )}
 
-                    {msg.conf >= 90 && msg.nudge && (
+                    {msg.conf >= 45 && msg.nudge && (
                       <div className="nudge">
                         <div className="nudge-ic"><div style={{ width: 16, height: 16 }}><Icons.sparkles /></div></div>
                         <span>{msg.nudge}</span>
@@ -3057,7 +3062,7 @@ function ChatScreen({ user, onAdmin, onLogout }) {
                       </div>
                     )}
 
-                    {msg.conf !== null && msg.conf < 90 && (
+                    {msg.conf !== null && msg.conf < 45 && (
                       <div className="escalate-card">
                         <div className="escalate-ic"><div style={{ width: 16, height: 16 }}><Icons.headset /></div></div>
                         <div className="escalate-body">
@@ -3149,7 +3154,7 @@ function ChatScreen({ user, onAdmin, onLogout }) {
                   const ph = document.getElementById('stage-placeholder');
                   if (ph) ph.style.display = 'flex';
                 }}
-                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', padding: 16, boxSizing: 'border-box', zIndex: 1 }}
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', padding: 16, boxSizing: 'border-box', zIndex: 1, mixBlendMode: 'multiply' }}
               />
               <div className="stage-badge"><span className="bdot" />Thinking…</div>
             </div>

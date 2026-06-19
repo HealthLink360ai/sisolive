@@ -15,7 +15,7 @@ const { getPineconeIndex } = require('../config/pinecone');
 const { embedText } = require('./embedding.service');
 const { logger } = require('../utils/logger');
 
-const CONFIDENCE_THRESHOLD = parseFloat(process.env.CONFIDENCE_THRESHOLD) || 0.90;
+const CONFIDENCE_THRESHOLD = parseFloat(process.env.CONFIDENCE_THRESHOLD) || 0.40;
 const MAX_CHUNKS = parseInt(process.env.MAX_CHUNKS_TO_RETRIEVE) || 5;
 
 /**
