@@ -3520,7 +3520,7 @@ function SystemHealthPanel() {
       </div>
       {!health && !running && (
         <div style={{ padding: '20px 24px', fontSize: 13, color: 'var(--text-3)' }}>
-          Click "Run diagnostic" to check Pinecone and Cohere connectivity and verify documents are indexed.
+          Click "Run diagnostic" to verify all AI services are working and documents are searchable.
         </div>
       )}
       {running && (
@@ -3535,22 +3535,22 @@ function SystemHealthPanel() {
           )}
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <div style={{ flex: 1, minWidth: 160, background: 'var(--bg-2)', borderRadius: 10, padding: '12px 14px' }}>
-              <div style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--text-3)', marginBottom: 4 }}>PINECONE</div>
+              <div style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--text-3)', marginBottom: 4 }}>AI SEARCH INDEX</div>
               <div style={{ fontSize: 13, fontWeight: 600, color: pineconeOk ? 'var(--teal)' : 'var(--signal)' }}>
-                {health.pinecone?.status === 'connected' ? 'Connected' : health.pinecone?.status === 'not_initialized' ? 'Not initialized' : 'Error'}
+                {health.pinecone?.status === 'connected' ? 'Connected' : health.pinecone?.status === 'not_initialized' ? 'Not connected' : 'Error'}
               </div>
               {vectorCount != null && (
                 <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>
                   {vectorCount === 0
-                    ? <span style={{ color: 'var(--signal)' }}>0 vectors — documents not indexed!</span>
-                    : <span style={{ color: 'var(--teal)' }}>{vectorCount} vectors stored</span>
+                    ? <span style={{ color: 'var(--signal)' }}>No documents are searchable yet</span>
+                    : <span style={{ color: 'var(--teal)' }}>{vectorCount} document sections indexed</span>
                   }
                 </div>
               )}
               {health.pinecone?.error && <div style={{ fontSize: 11, color: 'var(--signal)', marginTop: 2 }}>{health.pinecone.error}</div>}
             </div>
             <div style={{ flex: 1, minWidth: 160, background: 'var(--bg-2)', borderRadius: 10, padding: '12px 14px' }}>
-              <div style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--text-3)', marginBottom: 4 }}>COHERE EMBED</div>
+              <div style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--text-3)', marginBottom: 4 }}>AI LANGUAGE MODEL</div>
               <div style={{ fontSize: 13, fontWeight: 600, color: cohereOk ? 'var(--teal)' : 'var(--signal)' }}>
                 {cohereOk ? 'Connected' : 'Error'}
               </div>
@@ -3559,7 +3559,7 @@ function SystemHealthPanel() {
           </div>
           {matches.length > 0 && (
             <div>
-              <div style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--text-3)', marginBottom: 8 }}>TEST QUERY: "What is supplier inclusion?" — TOP MATCHES</div>
+              <div style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--text-3)', marginBottom: 8 }}>LIVE TEST: "What is supplier inclusion?" — DOCUMENT SECTIONS FOUND</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {matches.map((m, i) => (
                   <div key={i} style={{ background: 'var(--bg-2)', borderRadius: 8, padding: '10px 12px', fontSize: 12 }}>
@@ -3577,7 +3577,7 @@ function SystemHealthPanel() {
           )}
           {pineconeOk && cohereOk && matches.length === 0 && vectorCount === 0 && (
             <div style={{ fontSize: 13, color: 'var(--signal)', background: 'var(--signal-soft)', borderRadius: 8, padding: '10px 14px' }}>
-              Pinecone is connected but has no vectors. Use "Re-index" on each document below to populate the search index.
+              AI services are connected but no documents are searchable yet. Use "Re-index" on each document below to make them available to the AI.
             </div>
           )}
         </div>
@@ -3636,7 +3636,7 @@ function AdminDocs() {
       {needsReindex && (
         <div style={{ background: 'var(--signal-soft)', border: '1px solid var(--signal)', borderRadius: 10, padding: '12px 16px', marginBottom: 16, fontSize: 13, color: 'var(--signal)', display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 16, height: 16, flexShrink: 0 }}><Icons.alert /></div>
-          One or more documents are not indexed in Pinecone — they cannot be found by the AI. Click Re-index to fix.
+          Some documents aren't searchable yet — the AI won't be able to find them. Click <strong>Re-index</strong> next to each affected document to activate it. This usually takes under 30 seconds.
         </div>
       )}
 
@@ -3679,7 +3679,7 @@ function AdminDocs() {
                   </div>
                   <span style={{ fontSize: 12, color: 'var(--text-2)' }}>{d.chunk_count ? `${d.chunk_count} chunks` : '—'}</span>
                   <span className={`doc-status ${missingVectors ? 'warn' : ''}`}>
-                    {missingVectors ? 'NO VECTORS' : (d.status || 'ACTIVE').toUpperCase()}
+                    {missingVectors ? 'NOT SEARCHABLE' : (d.status || 'ACTIVE').toUpperCase()}
                   </span>
                   <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                     {missingVectors && (

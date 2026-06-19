@@ -122,6 +122,8 @@ async function startServer() {
     try {
       await initPinecone();
       logger.info('✓ Pinecone vector database connected');
+      // Auto re-index any documents that were uploaded while Pinecone was unavailable
+      autoReindexPending().catch(err => logger.warn({ err }, 'Auto re-index check failed'));
     } catch (err) {
       logger.warn({ err }, '⚠ Pinecone unavailable — RAG search disabled, continuing');
     }
@@ -142,6 +144,24 @@ async function startServer() {
   } catch (error) {
     logger.error({ error }, 'Failed to start server');
     process.exit(1);
+  }
+}
+
+async function autoReindexPending() {
+  const { query } = require('./config/database');
+  const { reindexDocument } = require('./services/ingestion.service');
+  const pending = await query(
+    "SELECT id, filename FROM documents WHERE has_vectors = false AND raw_text IS NOT NULL AND status = 'active'"
+  );
+  if (pending.rows.length === 0) return;
+  logger.info({ count: pending.rows.length }, 'Auto re-indexing documents that were pending vector storage');
+  for (const doc of pending.rows) {
+    try {
+      await reindexDocument(doc.id);
+      logger.info({ documentId: doc.id, filename: doc.filename }, 'Auto re-index complete');
+    } catch (err) {
+      logger.warn({ err, documentId: doc.id }, 'Auto re-index failed for document');
+    }
   }
 }
 
