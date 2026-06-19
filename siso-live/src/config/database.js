@@ -6,13 +6,26 @@ async function connectDatabase() {
   pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     max: parseInt(process.env.DATABASE_POOL_SIZE) || 5,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    ssl: { rejectUnauthorized: false },
+    connectionTimeoutMillis: 60000, // 60s — Neon free tier cold-starts can take ~30s
+    idleTimeoutMillis: 30000,
   });
-  const client = await pool.connect();
-  await client.query('SELECT NOW()');
-  client.release();
-  await runMigrations();
-  return pool;
+  // Retry up to 3 times to handle Neon cold-start
+  let lastErr;
+  for (let i = 0; i < 3; i++) {
+    try {
+      const client = await pool.connect();
+      await client.query('SELECT NOW()');
+      client.release();
+      await runMigrations();
+      return pool;
+    } catch (err) {
+      lastErr = err;
+      logger.warn({ attempt: i + 1, err }, 'Database connection attempt failed, retrying...');
+      await new Promise(r => setTimeout(r, 3000));
+    }
+  }
+  throw lastErr;
 }
 
 async function runMigrations() {
