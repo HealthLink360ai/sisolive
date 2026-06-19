@@ -3379,9 +3379,9 @@ function AdminUpload() {
       try {
         setFiles(prev => prev.map(f => f.id === item.id ? { ...f, pct: 30, status: 'Processing' } : f));
         await AdminAPI.uploadDocument(item.file);
-        setFiles(prev => prev.map(f => f.id === item.id ? { ...f, pct: 100, status: 'Indexed' } : f));
+        setFiles(prev => prev.map(f => f.id === item.id ? { ...f, pct: 100, status: 'Indexed', error: null } : f));
       } catch (e) {
-        setFiles(prev => prev.map(f => f.id === item.id ? { ...f, pct: 0, status: 'Failed' } : f));
+        setFiles(prev => prev.map(f => f.id === item.id ? { ...f, pct: 0, status: 'Failed', error: e.message || 'Upload failed' } : f));
       }
     }
   };
@@ -3429,7 +3429,10 @@ function AdminUpload() {
                 <div className="upload-row-ic"><Icons.files /></div>
                 <div className="upload-row-main">
                   <div className="upload-row-name">{f.name}</div>
-                  <div className="upload-row-meta">{f.status} · {fmtSize(f.size)}</div>
+                  <div className="upload-row-meta" style={{ color: f.status === 'Failed' ? 'var(--warn, #c0392b)' : undefined }}>
+                    {f.status} · {fmtSize(f.size)}
+                  </div>
+                  {f.error && <div style={{ fontSize: 11, color: 'var(--warn, #c0392b)', marginTop: 2, lineHeight: 1.4 }}>{f.error}</div>}
                   <div className="upload-progress">
                     <div className="upload-progress-fill" style={{ width: `${f.pct}%` }} />
                   </div>
