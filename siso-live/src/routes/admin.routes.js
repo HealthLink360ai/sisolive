@@ -7,8 +7,8 @@ const router = express.Router();
 // All admin routes require admin role
 router.use(requireAdmin);
 
-// GET /api/admin/dashboard — summary metrics
-router.get('/dashboard', async (req, res) => {
+// GET /api/admin/stats + /api/admin/dashboard — summary metrics
+async function dashboardHandler(req, res) {
   const currentMonth = new Date().toISOString().slice(0, 7);
   try {
     const [users, queries, spend, escalations] = await Promise.all([
@@ -32,7 +32,9 @@ router.get('/dashboard', async (req, res) => {
     logger.error({ error }, 'Dashboard query failed');
     res.status(500).json({ error: 'Failed to load dashboard' });
   }
-});
+}
+router.get('/dashboard', dashboardHandler);
+router.get('/stats', dashboardHandler);
 
 // GET /api/admin/analytics/top-queries
 router.get('/analytics/top-queries', async (req, res) => {
@@ -87,6 +89,21 @@ router.get('/analytics/feedback', async (req, res) => {
   }
 });
 
+// GET /api/admin/users
+router.get('/users', async (req, res) => {
+  try {
+    const result = await query(`
+      SELECT id, email, name, role, department, first_login, created_at, last_active
+      FROM users
+      ORDER BY last_active DESC
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    logger.error({ error }, 'Users fetch failed');
+    res.status(500).json({ error: 'Failed to load users' });
+  }
+});
+
 // GET /api/admin/documents
 router.get('/documents', async (req, res) => {
   try {
@@ -103,5 +120,25 @@ router.get('/documents', async (req, res) => {
     res.status(500).json({ error: 'Failed to load documents' });
   }
 });
+
+// DELETE /api/admin/documents/:id
+router.delete('/documents/:id', async (req, res) => {
+  try {
+    const result = await query(
+      'DELETE FROM documents WHERE id = $1 RETURNING id, filename',
+      [req.params.id]
+    );
+    if (!result.rows[0]) return res.status(404).json({ error: 'Document not found' });
+    logger.info({ documentId: req.params.id, adminId: req.user.id }, 'Document deleted');
+    res.json({ success: true, deleted: result.rows[0] });
+  } catch (error) {
+    logger.error({ error }, 'Document delete failed');
+    res.status(500).json({ error: 'Failed to delete document' });
+  }
+});
+
+// POST /api/admin/upload — proxies to the upload service (multer handled there)
+const uploadRouter = require('./upload.routes');
+router.use('/upload', uploadRouter);
 
 module.exports = router;

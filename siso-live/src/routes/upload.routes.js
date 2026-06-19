@@ -14,8 +14,8 @@ const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const UPLOAD_DIR = '/tmp/siso-uploads';
 const INGESTION_TIMEOUT_MS = 25000;
 
-// Ensure upload directory exists (Vercel /tmp is writable but not pre-created)
-fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+// Ensure upload directory exists
+try { fs.mkdirSync(UPLOAD_DIR, { recursive: true }); } catch (e) { /* non-fatal */ }
 
 const storage = multer.diskStorage({
   destination: UPLOAD_DIR,
@@ -48,8 +48,8 @@ function handleMulterError(err, req, res, next) {
   next();
 }
 
-// POST /api/upload/document — admin only
-router.post('/document', requireAdmin, upload.single('file'), handleMulterError, async (req, res) => {
+// Upload handler — shared by POST /api/upload/document and POST /api/admin/upload
+async function uploadHandler(req, res) {
   if (!req.file) {
     return res.status(400).json({ error: 'No file provided.' });
   }
@@ -102,16 +102,24 @@ router.post('/document', requireAdmin, upload.single('file'), handleMulterError,
     logger.error({ error, filename: originalname }, 'Upload failed');
     res.status(500).json({ error: 'Upload failed. Please try again.' });
   }
-});
+}
+
+// Register on both paths: /document (legacy) and / (frontend calls POST /api/admin/upload)
+router.post('/document', requireAdmin, upload.single('file'), handleMulterError, uploadHandler);
+router.post('/', upload.single('file'), handleMulterError, uploadHandler);
 
 // GET /api/upload/status/:documentId — check processing status
 router.get('/status/:documentId', requireAdmin, async (req, res) => {
-  const result = await query(
-    'SELECT id, filename, status, chunk_count, processed_at, error_message FROM documents WHERE id = $1',
-    [req.params.documentId]
-  );
-  if (!result.rows[0]) return res.status(404).json({ error: 'Document not found' });
-  res.json(result.rows[0]);
+  try {
+    const result = await query(
+      'SELECT id, filename, status, chunk_count, processed_at, error_message FROM documents WHERE id = $1',
+      [req.params.documentId]
+    );
+    if (!result.rows[0]) return res.status(404).json({ error: 'Document not found' });
+    res.json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to check status' });
+  }
 });
 
 module.exports = router;
