@@ -33,8 +33,6 @@ async function spendingGuard(req, res, next) {
       return res.status(503).json({
         error: 'SISO Live! has reached its monthly query capacity. Please contact your administrator.',
         code: 'BUDGET_CAP_REACHED',
-        currentSpend: currentSpend.toFixed(2),
-        monthlyBudget: cap,
       });
     }
 

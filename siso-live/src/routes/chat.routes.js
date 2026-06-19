@@ -5,9 +5,9 @@ const { checkDailyLimit } = require('../middleware/rateLimit');
 const { logger } = require('../utils/logger');
 const router = express.Router();
 
-// POST /api/chat/query — main chat endpoint
-router.post('/query', checkDailyLimit, async (req, res) => {
-  const { question } = req.body;
+// POST /api/chat — main chat endpoint (also accepts /query for backwards compat)
+async function chatHandler(req, res) {
+  const { question, conversationHistory } = req.body;
   const userId = req.user.id;
 
   if (!question || question.trim().length < 3) {
@@ -19,13 +19,16 @@ router.post('/query', checkDailyLimit, async (req, res) => {
   }
 
   try {
-    const result = await handleQuery(question.trim(), userId);
+    const result = await handleQuery(question.trim(), userId, conversationHistory || []);
     res.json(result);
   } catch (error) {
     logger.error({ error, userId, question: question.slice(0, 100) }, 'Chat query failed');
     res.status(500).json({ error: 'Failed to process your question. Please try again.' });
   }
-});
+}
+
+router.post('/', checkDailyLimit, chatHandler);
+router.post('/query', checkDailyLimit, chatHandler);
 
 // POST /api/chat/feedback — thumbs up/down on a response
 router.post('/feedback', async (req, res) => {

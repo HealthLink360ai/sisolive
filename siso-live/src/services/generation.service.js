@@ -24,7 +24,7 @@ const MAX_ANSWER_CHARS = parseInt(process.env.MAX_ANSWER_CHARS) || 400;
 /**
  * Generate a grounded answer from retrieved chunks
  */
-async function generateAnswer(question, chunks, userId) {
+async function generateAnswer(question, chunks, userId, conversationHistory = []) {
   const startTime = Date.now();
 
   // Build context from chunks — this is what Claude reads
@@ -89,12 +89,22 @@ Question: ${question}
 
 Remember: Answer in under ${MAX_ANSWER_CHARS} characters. Include a NUDGE line at the end.`;
 
+  // Build messages array: prior conversation + current question with context
+  const priorMessages = (conversationHistory || [])
+    .filter(m => m.role && m.content)
+    .map(m => ({ role: m.role, content: m.content }));
+
+  const messages = [
+    ...priorMessages,
+    { role: 'user', content: userMessage },
+  ];
+
   try {
     const response = await anthropic.messages.create({
       model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514',
-      max_tokens: 500,
+      max_tokens: 1024,
       system: systemPrompt,
-      messages: [{ role: 'user', content: userMessage }],
+      messages,
     });
 
     const fullResponse = response.content[0].text;
@@ -105,8 +115,10 @@ Remember: Answer in under ${MAX_ANSWER_CHARS} characters. Include a NUDGE line a
     const nudge = nudgeMatch ? nudgeMatch[1].trim() : null;
     const answer = fullResponse.replace(/\nNUDGE:.+$/m, '').trim();
 
-    // Handle insufficient context
-    if (answer === 'INSUFFICIENT_CONTEXT') {
+    // Detect escalation response from Claude (no context / off-topic)
+    const escalationPhrases = ['reach out to the SISO support desk', 'outside what SISO Live! covers', 'don\'t have enough verified information'];
+    const isInsufficient = escalationPhrases.some(p => answer.toLowerCase().includes(p.toLowerCase()));
+    if (isInsufficient) {
       return { answer: null, nudge: null, isInsufficient: true };
     }
 

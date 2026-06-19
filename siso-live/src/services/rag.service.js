@@ -24,7 +24,7 @@ const CONFIDENCE_THRESHOLD = parseFloat(process.env.CONFIDENCE_THRESHOLD) || 0.9
 /**
  * Main entry point — handles a user question end to end
  */
-async function handleQuery(question, userId) {
+async function handleQuery(question, userId, conversationHistory = []) {
   const startTime = Date.now();
 
   // Step 1: Check cache first — free answer if it exists
@@ -61,7 +61,7 @@ async function handleQuery(question, userId) {
 
   // Step 4: Generate answer from retrieved chunks
   const { answer, nudge, isInsufficient, tokens, cost } = await generateAnswer(
-    question, chunks, userId
+    question, chunks, userId, conversationHistory
   );
 
   // Step 5: Handle cases where Claude says context is insufficient

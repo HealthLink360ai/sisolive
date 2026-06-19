@@ -64,8 +64,19 @@ async function runMigrations() {
       user_id UUID REFERENCES users(id),
       rating VARCHAR(10) NOT NULL,
       comment TEXT,
-      created_at TIMESTAMP DEFAULT NOW()
+      created_at TIMESTAMP DEFAULT NOW(),
+      UNIQUE(query_id, user_id)
     )`);
+    // Add unique constraint to existing feedback tables created without it
+    await client.query(`
+      DO $$ BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint WHERE conname = 'feedback_query_id_user_id_key'
+        ) THEN
+          ALTER TABLE feedback ADD CONSTRAINT feedback_query_id_user_id_key UNIQUE (query_id, user_id);
+        END IF;
+      END $$;
+    `);
 
     await client.query(`CREATE TABLE IF NOT EXISTS spend_tracking (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

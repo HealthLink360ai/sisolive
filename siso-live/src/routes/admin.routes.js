@@ -36,52 +36,72 @@ router.get('/dashboard', async (req, res) => {
 
 // GET /api/admin/analytics/top-queries
 router.get('/analytics/top-queries', async (req, res) => {
-  const result = await query(`
-    SELECT question, COUNT(*) as count
-    FROM queries
-    WHERE created_at > NOW() - INTERVAL '30 days'
-    GROUP BY question
-    ORDER BY count DESC
-    LIMIT 10
-  `);
-  res.json(result.rows);
+  try {
+    const result = await query(`
+      SELECT question, COUNT(*) as count
+      FROM queries
+      WHERE created_at > NOW() - INTERVAL '30 days'
+      GROUP BY question
+      ORDER BY count DESC
+      LIMIT 10
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    logger.error({ error }, 'Top queries fetch failed');
+    res.status(500).json({ error: 'Failed to load top queries' });
+  }
 });
 
 // GET /api/admin/analytics/escalations
 router.get('/analytics/escalations', async (req, res) => {
-  const result = await query(`
-    SELECT question, confidence_score, created_at
-    FROM queries
-    WHERE was_escalated = true AND created_at > NOW() - INTERVAL '30 days'
-    ORDER BY created_at DESC
-    LIMIT 50
-  `);
-  res.json(result.rows);
+  try {
+    const result = await query(`
+      SELECT question, confidence_score, created_at
+      FROM queries
+      WHERE was_escalated = true AND created_at > NOW() - INTERVAL '30 days'
+      ORDER BY created_at DESC
+      LIMIT 50
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    logger.error({ error }, 'Escalations fetch failed');
+    res.status(500).json({ error: 'Failed to load escalations' });
+  }
 });
 
 // GET /api/admin/analytics/feedback
 router.get('/analytics/feedback', async (req, res) => {
-  const result = await query(`
-    SELECT f.rating, f.comment, q.question, f.created_at
-    FROM feedback f
-    JOIN queries q ON f.query_id = q.id
-    WHERE f.created_at > NOW() - INTERVAL '30 days'
-    ORDER BY f.created_at DESC
-    LIMIT 100
-  `);
-  res.json(result.rows);
+  try {
+    const result = await query(`
+      SELECT f.rating, f.comment, q.question, f.created_at
+      FROM feedback f
+      JOIN queries q ON f.query_id = q.id
+      WHERE f.created_at > NOW() - INTERVAL '30 days'
+      ORDER BY f.created_at DESC
+      LIMIT 100
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    logger.error({ error }, 'Feedback fetch failed');
+    res.status(500).json({ error: 'Failed to load feedback' });
+  }
 });
 
 // GET /api/admin/documents
 router.get('/documents', async (req, res) => {
-  const result = await query(`
-    SELECT d.id, d.filename, d.file_type, d.file_size_bytes, d.chunk_count,
-           d.status, d.uploaded_at, d.processed_at, u.name as uploaded_by
-    FROM documents d
-    LEFT JOIN users u ON d.uploaded_by = u.id
-    ORDER BY d.uploaded_at DESC
-  `);
-  res.json(result.rows);
+  try {
+    const result = await query(`
+      SELECT d.id, d.filename, d.file_type, d.file_size_bytes, d.chunk_count,
+             d.status, d.uploaded_at, d.processed_at, u.name as uploaded_by
+      FROM documents d
+      LEFT JOIN users u ON d.uploaded_by = u.id
+      ORDER BY d.uploaded_at DESC
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    logger.error({ error }, 'Documents fetch failed');
+    res.status(500).json({ error: 'Failed to load documents' });
+  }
 });
 
 module.exports = router;
