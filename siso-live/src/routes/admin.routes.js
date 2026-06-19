@@ -11,15 +11,28 @@ router.use(requireAdmin);
 async function dashboardHandler(req, res) {
   const currentMonth = new Date().toISOString().slice(0, 7);
   try {
-    const [users, queries, spend, escalations] = await Promise.all([
-      query('SELECT COUNT(*) FROM users WHERE last_active > NOW() - INTERVAL \'30 days\''),
-      query('SELECT COUNT(*) FROM queries WHERE created_at > NOW() - INTERVAL \'30 days\''),
+    const [users, queries, spend, escalations, avgConfResult, topQueriesResult, gapsResult] = await Promise.all([
+      query("SELECT COUNT(*) FROM users WHERE last_active > NOW() - INTERVAL '30 days'"),
+      query("SELECT COUNT(*) FROM queries WHERE created_at > NOW() - INTERVAL '30 days'"),
       query('SELECT estimated_cost_usd, query_count FROM spend_tracking WHERE month = $1', [currentMonth]),
-      query('SELECT COUNT(*) FROM queries WHERE was_escalated = true AND created_at > NOW() - INTERVAL \'30 days\''),
+      query("SELECT COUNT(*) FROM queries WHERE was_escalated = true AND created_at > NOW() - INTERVAL '30 days'"),
+      query("SELECT ROUND(AVG(confidence_score) * 100) as avg_conf FROM queries WHERE created_at > NOW() - INTERVAL '30 days' AND confidence_score IS NOT NULL"),
+      query("SELECT question, COUNT(*) as count FROM queries WHERE created_at > NOW() - INTERVAL '30 days' GROUP BY question ORDER BY count DESC LIMIT 10"),
+      query("SELECT question, COUNT(*) as count FROM queries WHERE was_escalated = true AND created_at > NOW() - INTERVAL '30 days' GROUP BY question ORDER BY count DESC LIMIT 10"),
     ]);
 
     const totalQueries = parseInt(queries.rows[0].count);
     const totalEscalations = parseInt(escalations.rows[0].count);
+
+    const topQRows = topQueriesResult.rows;
+    const maxCount = topQRows.length > 0 ? parseInt(topQRows[0].count) : 1;
+    const topQueries = topQRows.map(r => [
+      r.question,
+      parseInt(r.count),
+      Math.round((parseInt(r.count) / maxCount) * 100),
+    ]);
+
+    const knowledgeGaps = gapsResult.rows.map(r => [r.question, parseInt(r.count)]);
 
     res.json({
       activeUsers: parseInt(users.rows[0].count),
@@ -27,6 +40,9 @@ async function dashboardHandler(req, res) {
       escalationRate: totalQueries > 0 ? ((totalEscalations / totalQueries) * 100).toFixed(1) : 0,
       monthlySpend: parseFloat(spend.rows[0]?.estimated_cost_usd || 0).toFixed(2),
       monthlyBudget: process.env.MONTHLY_BUDGET_CAP_USD || 100,
+      avgConfidence: avgConfResult.rows[0]?.avg_conf ?? null,
+      topQueries,
+      knowledgeGaps,
     });
   } catch (error) {
     logger.error({ error }, 'Dashboard query failed');
