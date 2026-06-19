@@ -99,7 +99,7 @@ async function uploadHandler(req, res) {
     }
 
   } catch (error) {
-    logger.error({ error, filename: originalname }, 'Upload failed');
+    logger.error({ errorMessage: error.message, errorStack: error.stack, filename: originalname }, 'Upload failed');
     res.status(500).json({ error: 'Upload failed. Please try again.' });
   }
 }

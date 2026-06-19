@@ -34,6 +34,7 @@ async function ingestDocument(filePath, documentId, filename, uploadedBy) {
     // Step 1: Extract text based on file type
     const fileType = path.extname(filename).toLowerCase().slice(1);
     let rawText = '';
+    logger.info({ documentId, fileType, filePath }, 'Step 1: extracting text');
 
     if (fileType === 'pdf') {
       rawText = await extractPdfText(filePath);
@@ -49,14 +50,16 @@ async function ingestDocument(filePath, documentId, filename, uploadedBy) {
       throw new Error('Document appears to be empty or unreadable');
     }
 
-    logger.info({ documentId, textLength: rawText.length }, 'Text extracted');
+    logger.info({ documentId, textLength: rawText.length }, 'Step 1 complete: text extracted');
 
     // Step 2: Split into chunks
     const chunks = chunkText(rawText);
-    logger.info({ documentId, chunkCount: chunks.length }, 'Document chunked');
+    logger.info({ documentId, chunkCount: chunks.length }, 'Step 2 complete: document chunked');
 
     // Step 3: Embed all chunks (batch for efficiency)
+    logger.info({ documentId, chunkCount: chunks.length }, 'Step 3: embedding with Cohere');
     const embeddings = await embedBatch(chunks, 'search_document');
+    logger.info({ documentId }, 'Step 3 complete: embeddings generated');
 
     // Step 4: Store in Pinecone with metadata
     const index = getPineconeIndex();
@@ -105,7 +108,7 @@ async function ingestDocument(filePath, documentId, filename, uploadedBy) {
 
     return { success: true, chunkCount: chunks.length, processingTimeMs: processingTime };
   } catch (error) {
-    logger.error({ error, documentId, filename }, 'Document ingestion failed');
+    logger.error({ errorMessage: error.message, errorStack: error.stack, documentId, filename }, 'Document ingestion failed');
 
     await query(`
       UPDATE documents SET status = 'error', error_message = $1 WHERE id = $2
