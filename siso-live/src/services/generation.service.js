@@ -71,9 +71,9 @@ You have the full conversation history above. Use it.
 - Build on what the user knows from earlier: "Building on what we covered about X..."
 - Track the learning arc — if a user has asked three questions about ESG, guide them deeper
 
-CONFIDENCE AND ESCALATION:
-- 90% or above: answer fully with source and nudge
-- Below 90%: escalate only — do not attempt to answer, do not speculate
+ESCALATION:
+- If the provided documents contain enough relevant information, answer fully with source and nudge
+- Escalate ONLY when the provided documents genuinely do not contain information to answer the question
 
 OFF-TOPIC HANDLING:
 - Off-topic: "SISO Live! is focused on supplier inclusion and sustainability. For [topic], [resource] is your best next step. Is there anything on supplier inclusion or sustainability I can help with?"
@@ -141,7 +141,7 @@ Remember: Answer in under ${MAX_ANSWER_CHARS} characters. Include a NUDGE line a
     }, 'Answer generated');
 
     return {
-      answer: answer.slice(0, MAX_ANSWER_CHARS), // Hard cap on length
+      answer,
       nudge,
       isInsufficient: false,
       tokens: { input: inputTokens, output: outputTokens },

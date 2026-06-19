@@ -1272,7 +1272,7 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
 }
 .bubble-user {
   padding: 12px 16px;
-  background: var(--ink);
+  background: var(--abbvie-blue);
   color: var(--text-on-ink);
   border-radius: 18px 18px 6px 18px;
   font-size: 14px;
@@ -1334,12 +1334,13 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
 .assistant-stage {
   position: relative;
   border-radius: var(--r-lg);
-  background: var(--paper-3);
+  background: transparent;
   overflow: hidden;
   aspect-ratio: 1 / 1;
-  border: 1px solid var(--rule);
-  box-shadow: var(--shadow-card);
-  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  transition: filter 0.25s ease;
+}
+.assistant-stage.thinking {
+  filter: drop-shadow(0 0 8px rgba(21,183,154,0.5));
 }
 .assistant-stage img.gif {
   position: absolute; inset: 0;
@@ -1396,10 +1397,6 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
 @media (prefers-reduced-motion: reduce) {
   .assistant-stage .stage-ph::after,
   .assistant-stage .stage-ph .glyph { animation: none; }
-}
-.assistant-stage.thinking {
-  border-color: var(--teal);
-  box-shadow: 0 0 0 4px rgba(21,183,154,0.14), 0 8px 24px -12px rgba(21,183,154,0.4);
 }
 .assistant-stage .stage-badge {
   position: absolute; left: 12px; bottom: 12px; z-index: 2;
@@ -2819,10 +2816,11 @@ function ChatScreen({ user, onAdmin, onLogout }) {
         : result.confidence != null
           ? Math.round(result.confidence * 100)
           : (answer ? 95 : 60);
+      const escalated = result.shouldEscalate === true;
       setMessages((m) => [...m, {
         id: Date.now() + 1, role: 'ai',
-        text: conf >= 45 ? answer : null,
-        conf, source: result.source || null, nudge: result.nudge || null,
+        text: (!escalated && conf >= 45) ? answer : null,
+        conf, escalated, source: result.source || null, nudge: result.nudge || null,
         feedback: null, showComment: false, comment: '',
         chars: answer ? answer.length : null
       }]);
@@ -2965,7 +2963,7 @@ function ChatScreen({ user, onAdmin, onLogout }) {
                 return (
                   <div key={msg.id} className="msg-ai">
                     <div className="msg-ai-head">
-                      <div className="msg-ai-av"><div style={{ width: 14, height: 14 }}><Icons.atom /></div></div>
+
                       <span className="msg-ai-name">SISO <em>Live!</em></span>
                       <span className="msg-ai-time">{nowStr()}</span>
                     </div>
@@ -2976,7 +2974,7 @@ function ChatScreen({ user, onAdmin, onLogout }) {
                       </div>
                     )}
 
-                    {msg.conf !== null && msg.conf >= 45 && (
+                    {msg.conf !== null && !msg.escalated && msg.conf >= 45 && (
                       <div className="ai-card">
                         <div className="ai-card-body">{msg.text}</div>
                         <div className="ai-card-foot">
@@ -3000,7 +2998,7 @@ function ChatScreen({ user, onAdmin, onLogout }) {
                       </div>
                     )}
 
-                    {msg.conf !== null && msg.conf < 45 && (
+                    {msg.conf !== null && (msg.escalated || msg.conf < 45) && (
                       <div className="ai-card">
                         <div className="ai-card-body low-conf">
                           I don't have enough verified information to answer this confidently. For accurate guidance, please reach out to the SISO support desk — they're the right resource for this.
@@ -3054,7 +3052,7 @@ function ChatScreen({ user, onAdmin, onLogout }) {
                       </div>
                     )}
 
-                    {msg.conf >= 45 && msg.nudge && (
+                    {!msg.escalated && msg.conf >= 45 && msg.nudge && (
                       <div className="nudge">
                         <div className="nudge-ic"><div style={{ width: 16, height: 16 }}><Icons.sparkles /></div></div>
                         <span>{msg.nudge}</span>
@@ -3062,7 +3060,7 @@ function ChatScreen({ user, onAdmin, onLogout }) {
                       </div>
                     )}
 
-                    {msg.conf !== null && msg.conf < 45 && (
+                    {msg.conf !== null && (msg.escalated || msg.conf < 45) && (
                       <div className="escalate-card">
                         <div className="escalate-ic"><div style={{ width: 16, height: 16 }}><Icons.headset /></div></div>
                         <div className="escalate-body">
