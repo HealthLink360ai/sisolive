@@ -3390,12 +3390,12 @@ function AdminUpload() {
 
   return (
     <>
-      <div className="panel">
+      <div className="panel" style={{ overflow: 'visible' }}>
         <div className="panel-head">
           <div className="panel-title"><span className="panel-title-ic"><Icons.upload /></span>Add to <em>knowledge base</em></div>
           <span className="panel-tag">CHUNKED &amp; EMBEDDED ON UPLOAD</span>
         </div>
-        <div className="panel-body" style={{ padding: 20 }}>
+        <div className="panel-body" style={{ padding: '16px 20px 20px', overflow: 'visible' }}>
           <input ref={fileInputRef} type="file" multiple accept=".pdf,.docx,.txt,.pptx,.csv,.xlsx,.mp4,.mov,.wav"
             style={{ display: 'none' }} onChange={(e) => handleFiles(e.target.files)} />
           <div
