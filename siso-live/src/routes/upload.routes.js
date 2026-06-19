@@ -48,10 +48,29 @@ function handleMulterError(err, req, res, next) {
   next();
 }
 
+const UPLOAD_LIMIT_PER_USER = 20;
+
 // Upload handler — shared by POST /api/upload/document and POST /api/admin/upload
 async function uploadHandler(req, res) {
   if (!req.file) {
     return res.status(400).json({ error: 'No file provided.' });
+  }
+
+  // Enforce per-user upload limit (admins are exempt)
+  if (req.user.role !== 'admin') {
+    const countResult = await query(
+      'SELECT COUNT(*) FROM documents WHERE uploaded_by = $1 AND status != $2',
+      [req.user.id, 'error']
+    );
+    const count = parseInt(countResult.rows[0].count);
+    if (count >= UPLOAD_LIMIT_PER_USER) {
+      return res.status(403).json({
+        error: `You've reached the ${UPLOAD_LIMIT_PER_USER}-document limit. Please contact your SISO administrator to expand your knowledge base.`,
+        code: 'UPLOAD_LIMIT_REACHED',
+        current: count,
+        limit: UPLOAD_LIMIT_PER_USER,
+      });
+    }
   }
 
   const documentId = uuidv4();
