@@ -200,7 +200,16 @@ router.get('/diagnostics', async (req, res) => {
     report.cohere.error = e.message;
   }
 
-  res.json(report);
+  res.json({
+    timestamp: new Date().toISOString(),
+    config: {
+      confidenceThreshold: process.env.CONFIDENCE_THRESHOLD || '(not set — using 0.40 default)',
+      pineconeIndex: process.env.PINECONE_INDEX_NAME || '(not set — using siso-live-prod)',
+    },
+    pinecone: report.pinecone,
+    cohere: report.cohere,
+    testQuery: report.testQuery,
+  });
 });
 
 // POST /api/admin/documents/:id/reingest — re-index from stored raw text

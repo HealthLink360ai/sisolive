@@ -3556,6 +3556,15 @@ function SystemHealthPanel() {
               </div>
               {health.cohere?.error && <div style={{ fontSize: 11, color: 'var(--signal)', marginTop: 2 }}>{health.cohere.error}</div>}
             </div>
+            {health.config && (
+              <div style={{ flex: 1, minWidth: 160, background: 'var(--bg-2)', borderRadius: 10, padding: '12px 14px' }}>
+                <div style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--text-3)', marginBottom: 4 }}>SETTINGS</div>
+                <div style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.7 }}>
+                  <div>Confidence threshold: <strong style={{ color: parseFloat(health.config.confidenceThreshold) > 0.5 ? 'var(--signal)' : 'var(--text)' }}>{health.config.confidenceThreshold}</strong></div>
+                  <div>Search index: <strong style={{ color: 'var(--text)' }}>{health.config.pineconeIndex}</strong></div>
+                </div>
+              </div>
+            )}
           </div>
           {matches.length > 0 && (
             <div>
