@@ -12,7 +12,7 @@ const router = express.Router();
 const ALLOWED_TYPES = ['application/pdf', 'text/csv', 'text/plain'];
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const UPLOAD_DIR = '/tmp/siso-uploads';
-const INGESTION_TIMEOUT_MS = 25000;
+const INGESTION_TIMEOUT_MS = 55000; // Allow up to 55s for AI-based PDF extraction on large files
 
 // Ensure upload directory exists
 try { fs.mkdirSync(UPLOAD_DIR, { recursive: true }); } catch (e) { /* non-fatal */ }

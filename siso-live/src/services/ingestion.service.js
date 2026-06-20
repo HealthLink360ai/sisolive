@@ -47,7 +47,7 @@ async function ingestDocument(filePath, documentId, filename, uploadedBy) {
     }
 
     if (!rawText || rawText.trim().length < 20) {
-      throw new Error('No text could be extracted. This PDF may be image-based (scanned). Please upload a text-based PDF exported from Word or Google Docs.');
+      throw new Error('No text could be extracted from this file. It may be password-protected or corrupted. Please check the file and try again.');
     }
 
     logger.info({ documentId, textLength: rawText.length }, 'Step 1 complete: text extracted');
@@ -128,8 +128,67 @@ async function ingestDocument(filePath, documentId, filename, uploadedBy) {
 
 async function extractPdfText(filePath) {
   const dataBuffer = fs.readFileSync(filePath);
-  const data = await pdfParse(dataBuffer);
-  return data.text;
+
+  // Try standard text extraction first — fast and free
+  try {
+    const data = await pdfParse(dataBuffer);
+    const text = data.text || '';
+    // If we got meaningful text (at least ~4 chars per page), use it
+    const pageCount = data.numpages || 1;
+    if (text.trim().length >= pageCount * 4) {
+      logger.info({ filePath, chars: text.length, pages: pageCount }, 'PDF text extracted via pdf-parse');
+      return text;
+    }
+    logger.info({ chars: text.length, pages: pageCount }, 'PDF has little embedded text — using AI extraction');
+  } catch (e) {
+    logger.warn({ error: e.message }, 'pdf-parse failed — falling back to AI extraction');
+  }
+
+  // Fall back to Claude for image-based or complex PDFs
+  return extractPdfTextWithClaude(dataBuffer, filePath);
+}
+
+async function extractPdfTextWithClaude(dataBuffer, filePath) {
+  const fileSizeMB = dataBuffer.length / (1024 * 1024);
+  if (fileSizeMB > 30) {
+    throw new Error(
+      `This PDF is ${fileSizeMB.toFixed(1)}MB. Maximum supported size is 30MB. ` +
+      `Please reduce the file size or split it into smaller documents.`
+    );
+  }
+
+  logger.info({ fileSizeMB: fileSizeMB.toFixed(2), filePath }, 'Extracting PDF text via Claude AI');
+  const Anthropic = require('@anthropic-ai/sdk');
+  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+  const response = await anthropic.messages.create({
+    model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514',
+    max_tokens: 8096,
+    messages: [{
+      role: 'user',
+      content: [
+        {
+          type: 'document',
+          source: {
+            type: 'base64',
+            media_type: 'application/pdf',
+            data: dataBuffer.toString('base64'),
+          },
+        },
+        {
+          type: 'text',
+          text: 'Extract all text content from this document exactly as written, preserving the structure and paragraphs. Return only the extracted text, no commentary.',
+        },
+      ],
+    }],
+  });
+
+  const text = response.content[0]?.text || '';
+  if (!text.trim()) {
+    throw new Error('Could not extract any text from this PDF. The file may be password-protected or corrupted.');
+  }
+  logger.info({ chars: text.length }, 'PDF text extracted via Claude AI');
+  return text;
 }
 
 async function extractCsvText(filePath) {
