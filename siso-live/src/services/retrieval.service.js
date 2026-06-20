@@ -15,7 +15,12 @@ const { getPineconeIndex } = require('../config/pinecone');
 const { embedText } = require('./embedding.service');
 const { logger } = require('../utils/logger');
 
-const CONFIDENCE_THRESHOLD = parseFloat(process.env.CONFIDENCE_THRESHOLD) || 0.40;
+// Cap at 0.35 max regardless of env var — domain-specific scores vary widely.
+// rag.service.js bypasses this gate when chunks exist anyway; Claude is the real arbiter.
+const envThreshold = parseFloat(process.env.CONFIDENCE_THRESHOLD);
+const CONFIDENCE_THRESHOLD = (!isNaN(envThreshold) && envThreshold > 0)
+  ? Math.min(envThreshold, 0.35)
+  : 0.25;
 const MAX_CHUNKS = parseInt(process.env.MAX_CHUNKS_TO_RETRIEVE) || 5;
 
 /**

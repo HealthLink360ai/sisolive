@@ -77,7 +77,7 @@ async function ingestDocument(filePath, documentId, filename, uploadedBy) {
       metadata: {
         documentId,
         filename,
-        text: chunk.slice(0, 1000), // Store first 1000 chars for display
+        text: chunk.slice(0, 2000), // Full chunk content — Claude needs complete context
         chunkIndex: i,
         totalChunks: chunks.length,
         uploadedBy,
@@ -239,7 +239,7 @@ async function reindexDocument(documentId) {
       metadata: {
         documentId,
         filename: doc.filename,
-        text: chunk.slice(0, 1000),
+        text: chunk.slice(0, 2000),
         chunkIndex: i,
         totalChunks: chunks.length,
         uploadedBy: doc.uploaded_by,

@@ -71,9 +71,12 @@ You have the full conversation history above. Use it.
 - Build on what the user knows from earlier: "Building on what we covered about X..."
 - Track the learning arc — if a user has asked three questions about ESG, guide them deeper
 
-ESCALATION:
-- If the provided documents contain enough relevant information, answer fully with source and nudge
-- Escalate ONLY when the provided documents genuinely do not contain information to answer the question
+ESCALATION — USE EXTREMELY SPARINGLY:
+The documents provided to you are specifically retrieved because they are relevant to this question. They come from AbbVie's verified supplier inclusion knowledge base. ASSUME the answer is in them.
+- Answer from the documents. If the documents mention the concept at all, use that to build a full answer.
+- Escalate ONLY if the provided text is literally about a completely different topic with zero connection to the question asked.
+- "What is supplier inclusion?" and similar foundational questions ALWAYS have answers in the documents. Never escalate these.
+- When in doubt, answer. A partial answer from the documents is better than escalating.
 
 OFF-TOPIC HANDLING:
 - Off-topic: "SISO Live! is focused on supplier inclusion and sustainability. For [topic], [resource] is your best next step. Is there anything on supplier inclusion or sustainability I can help with?"
@@ -87,7 +90,7 @@ ${context}
 
 Question: ${question}
 
-Remember: Answer in under ${MAX_ANSWER_CHARS} characters. Include a NUDGE line at the end.`;
+Answer from the documents above. Include a NUDGE line at the end.`;
 
   // Build messages array: prior conversation + current question with context
   const priorMessages = (conversationHistory || [])
@@ -115,9 +118,12 @@ Remember: Answer in under ${MAX_ANSWER_CHARS} characters. Include a NUDGE line a
     const nudge = nudgeMatch ? nudgeMatch[1].trim() : null;
     const answer = fullResponse.replace(/\nNUDGE:.+$/m, '').trim();
 
-    // Detect escalation response from Claude (no context / off-topic)
-    const escalationPhrases = ['reach out to the SISO support desk', 'outside what SISO Live! covers', 'don\'t have enough verified information'];
-    const isInsufficient = escalationPhrases.some(p => answer.toLowerCase().includes(p.toLowerCase()));
+    // Only treat as insufficient when Claude returns the exact escalation opening sentence.
+    // Partial phrase matches (e.g. a nudge mentioning "support desk") must NOT trigger this.
+    const lowerAnswer = answer.toLowerCase();
+    const isInsufficient =
+      lowerAnswer.includes("i don't have enough verified information to answer this confidently") ||
+      lowerAnswer.includes("that's outside what siso live! covers");
     if (isInsufficient) {
       return { answer: null, nudge: null, isInsufficient: true };
     }
