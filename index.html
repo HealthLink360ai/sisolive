@@ -2842,9 +2842,13 @@ function ChatScreen({ user, onAdmin, onLogout }) {
       }]);
     } catch (e) {
       setTyping(false);
+      // Show actual server error so issues are diagnosable; fall back to generic for network failures
+      const msg = (e.message && e.message !== 'Query failed' && e.message !== 'Failed to fetch')
+        ? e.message
+        : "I'm having trouble connecting right now. Please try again in a moment.";
       setMessages((m) => [...m, {
         id: Date.now() + 1, role: 'ai',
-        text: "I'm having trouble connecting right now. Please try again in a moment.",
+        text: msg,
         conf: null, source: null, nudge: null,
         feedback: null, showComment: false, comment: '', chars: null
       }]);

@@ -30,8 +30,14 @@ const MAX_CHUNKS = parseInt(process.env.MAX_CHUNKS_TO_RETRIEVE) || 5;
 async function retrieveRelevantChunks(question) {
   const startTime = Date.now();
 
-  // Step 1: Convert question to vector
-  const questionVector = await embedText(question, 'search_query');
+  // Step 1: Convert question to vector — if embedding fails, return empty rather than crashing
+  let questionVector;
+  try {
+    questionVector = await embedText(question, 'search_query');
+  } catch (err) {
+    logger.error({ err }, 'Embedding failed — returning empty retrieval result');
+    return { chunks: [], confidence: 0, shouldEscalate: true, topScore: 0 };
+  }
 
   // Step 2: Search Pinecone for similar vectors
   const index = getPineconeIndex();
@@ -39,11 +45,17 @@ async function retrieveRelevantChunks(question) {
     logger.warn('Pinecone unavailable — returning empty retrieval result');
     return { chunks: [], confidence: 0, shouldEscalate: true, topScore: 0 };
   }
-  const searchResults = await index.query({
-    vector: questionVector,
-    topK: MAX_CHUNKS,
-    includeMetadata: true,
-  });
+  let searchResults;
+  try {
+    searchResults = await index.query({
+      vector: questionVector,
+      topK: MAX_CHUNKS,
+      includeMetadata: true,
+    });
+  } catch (err) {
+    logger.error({ err }, 'Pinecone query failed — returning empty retrieval result');
+    return { chunks: [], confidence: 0, shouldEscalate: true, topScore: 0 };
+  }
 
   const matches = searchResults.matches || [];
 
