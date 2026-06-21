@@ -162,7 +162,7 @@ async function extractPdfTextWithClaude(dataBuffer, filePath) {
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
   const response = await anthropic.messages.create({
-    model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514',
+    model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6',
     max_tokens: 8096,
     messages: [{
       role: 'user',
