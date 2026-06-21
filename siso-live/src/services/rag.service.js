@@ -19,7 +19,6 @@ const { query } = require('../config/database');
 const { logger } = require('../utils/logger');
 const crypto = require('crypto');
 
-const CONFIDENCE_THRESHOLD = parseFloat(process.env.CONFIDENCE_THRESHOLD) || 0.90;
 
 /**
  * Main entry point — handles a user question end to end
