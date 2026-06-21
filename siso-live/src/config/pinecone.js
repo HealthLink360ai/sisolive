@@ -3,6 +3,7 @@ const { logger } = require('../utils/logger');
 let pineconeIndex = null;
 
 async function initPinecone() {
+  if (pineconeIndex) return pineconeIndex; // already initialized — safe to call repeatedly
   const pc = new Pinecone({ apiKey: process.env.PINECONE_API_KEY });
   const indexName = process.env.PINECONE_INDEX_NAME || 'siso-live-prod';
   const existingIndexes = await pc.listIndexes();

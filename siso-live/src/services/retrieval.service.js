@@ -11,7 +11,7 @@
  * how confident it is that those passages actually answer the question.
  */
 
-const { getPineconeIndex } = require('../config/pinecone');
+const { getPineconeIndex, initPinecone } = require('../config/pinecone');
 const { embedText } = require('./embedding.service');
 const { logger } = require('../utils/logger');
 
@@ -39,10 +39,21 @@ async function retrieveRelevantChunks(question) {
     return { chunks: [], confidence: 0, shouldEscalate: true, topScore: 0 };
   }
 
-  // Step 2: Search Pinecone for similar vectors
-  const index = getPineconeIndex();
+  // Step 2: Search Pinecone for similar vectors.
+  // getPineconeIndex() may be null on a Vercel cold start where the first request
+  // races against async startup — attempt on-demand init before giving up.
+  let index = getPineconeIndex();
   if (!index) {
-    logger.warn('Pinecone unavailable — returning empty retrieval result');
+    try {
+      logger.info('Pinecone not yet initialized — attempting on-demand init');
+      index = await initPinecone();
+    } catch (err) {
+      logger.warn({ err }, 'Pinecone on-demand init failed — returning empty retrieval result');
+      return { chunks: [], confidence: 0, shouldEscalate: true, topScore: 0 };
+    }
+  }
+  if (!index) {
+    logger.warn('Pinecone unavailable after on-demand init — returning empty retrieval result');
     return { chunks: [], confidence: 0, shouldEscalate: true, topScore: 0 };
   }
   let searchResults;
