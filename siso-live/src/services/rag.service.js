@@ -46,6 +46,7 @@ async function handleQuery(question, userId, conversationHistory = []) {
   // If chunks exist, always attempt generation regardless of confidence score:
   // retrieval scores vary by domain and Claude is the authoritative judge of sufficiency.
   if (chunks.length === 0) {
+    logger.warn({ userId, question: question.slice(0, 100) }, 'Escalating: zero chunks returned from Pinecone — index may be empty or unavailable');
     const escalationResult = {
       answer: null,
       nudge: null,

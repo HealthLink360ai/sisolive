@@ -49,9 +49,9 @@ PLAIN LANGUAGE RULE:
 Write for a general AbbVie employee, not a procurement specialist. If a technical term appears in the document (like "sourcing lifecycle" or "ESG"), translate it into plain English in that same sentence. Never drop jargon without explanation.
 
 TRAINER RESPONSE STRUCTURE — follow this every time:
-1. DEFINITION — One clear sentence that defines the concept. Grounded in the document. Example: "According to the [Document Name], supplier inclusion is..."
-2. EXAMPLE — One or two sentences that make it concrete. Use "Think of it this way:" or "Here's a practical example:" to introduce it. Draw from the document; if the document doesn't give a concrete example, construct one that faithfully illustrates what the document says.
-3. ABBVIE CONTEXT — One sentence connecting the definition to how AbbVie applies it, if the document supports this.
+1. DEFINITION — One clear sentence that defines the concept, grounded in the document. Example: "According to the [Document Name], supplier inclusion is..."
+2. EXAMPLE — One or two sentences that make it concrete. Use "Think of it this way:" or "Here's a practical example:" to introduce it. Draw the example from what the document actually says — do not invent details not in the text.
+3. ABBVIE CONTEXT — One sentence connecting the definition to how AbbVie applies it, if the document supports this. Skip if redundant with the definition.
 4. TAKEAWAY — One sentence: "The bottom line: ..."
 
 Then on a new line:
@@ -92,12 +92,13 @@ OFF-TOPIC HANDLING:
 
 NEVER: use markdown or special formatting characters, speculate outside source documents, use "diversity" where "inclusion" is correct, give legal advice, fabricate statistics or policy details, repeat prior answers or nudges.`;
 
-  const userMessage = `Documents to reference:
+  const userMessage = `DOCUMENT CHUNKS (retrieved because they match this question):
 ${context}
 
-Question: ${question}
+---
+QUESTION: ${question}
 
-Answer from the documents above. Include a NUDGE line at the end.`;
+INSTRUCTIONS: Document chunks are present above — you MUST answer from them. Do not escalate. Follow the trainer structure: Definition, Example, AbbVie Context, Takeaway, then "Source: [doc name]" and "NUDGE: [one question under 15 words]". Plain prose only — no markdown, no bullet lists.`;
 
   // Build messages array: prior conversation + current question with context
   const priorMessages = (conversationHistory || [])
@@ -125,13 +126,12 @@ Answer from the documents above. Include a NUDGE line at the end.`;
     const nudge = nudgeMatch ? nudgeMatch[1].trim() : null;
     const answer = fullResponse.replace(/\nNUDGE:.+$/m, '').trim();
 
-    // Only treat as insufficient when Claude returns the exact escalation opening sentence.
-    // Partial phrase matches (e.g. a nudge mentioning "support desk") must NOT trigger this.
-    const lowerAnswer = answer.toLowerCase();
+    const lowerResponse = fullResponse.toLowerCase();
     const isInsufficient =
-      lowerAnswer.includes("i don't have enough verified information to answer this confidently") ||
-      lowerAnswer.includes("that's outside what siso live! covers");
+      lowerResponse.includes("i don't have enough verified information to answer this confidently") ||
+      lowerResponse.includes("that's outside what siso live! covers");
     if (isInsufficient) {
+      logger.warn({ question: question.slice(0, 100), rawResponse: fullResponse.slice(0, 500) }, 'Claude chose to escalate despite receiving chunks — check rawResponse');
       return { answer: null, nudge: null, isInsufficient: true };
     }
 
