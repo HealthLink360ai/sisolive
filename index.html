@@ -2859,15 +2859,19 @@ function ChatScreen({ user, onAdmin, onLogout }) {
     setMessages((m) => m.map((msg) =>
       msg.id === id ? { ...msg, feedback: val, showComment: val === 'down' } : msg
     ));
-    const msg = messages.find(m => m.id === id);
-    if (msg) ChatAPI.feedback(id, val, '').catch(() => {});
+    // For thumbs-up, log immediately (no comment needed).
+    // For thumbs-down, wait for submitComment so the comment is included.
+    if (val !== 'down') {
+      const msg = messages.find(m => m.id === id);
+      if (msg) ChatAPI.feedback(id, val, '').catch(() => {});
+    }
   };
 
   const submitComment = (id) => {
     const msg = messages.find(m => m.id === id);
     if (msg) ChatAPI.feedback(id, 'down', msg.comment).catch(() => {});
     setMessages((m) => m.map((msg) =>
-      msg.id === id ? { ...msg, showComment: false, feedback: 'submitted' } : msg
+      msg.id === id ? { ...msg, showComment: false } : msg
     ));
   };
 
@@ -3039,7 +3043,7 @@ function ChatScreen({ user, onAdmin, onLogout }) {
                       <div className="feedback-row">
                         <span className="fb-lbl">Was this helpful?</span>
                         <button
-                          className={`fb-btn ${msg.feedback === 'up' || msg.feedback === 'submitted' ? 'up-on' : ''}`}
+                          className={`fb-btn ${msg.feedback === 'up' ? 'up-on' : ''}`}
                           onClick={() => setFeedback(msg.id, 'up')}
                           aria-label="Thumbs up">
                           <div style={{ width: 14, height: 14 }}><Icons.thumbup /></div>
@@ -3050,7 +3054,7 @@ function ChatScreen({ user, onAdmin, onLogout }) {
                           aria-label="Thumbs down">
                           <div style={{ width: 14, height: 14 }}><Icons.thumbdown /></div>
                         </button>
-                        {(msg.feedback === 'up' || msg.feedback === 'submitted') && (
+                        {(msg.feedback === 'up' || (msg.feedback === 'down' && !msg.showComment)) && (
                           <span className="fb-thanks">
                             <div style={{ width: 11, height: 11 }}><Icons.check /></div>
                             Thanks, logged
