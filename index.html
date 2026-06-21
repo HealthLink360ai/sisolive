@@ -2801,10 +2801,10 @@ function ChatScreen({ user, onAdmin, onLogout }) {
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, typing]);
 
   const chips = [
-    'What is our supplier inclusion spend target?',
-    'How do we measure carbon reduction?',
-    'What is the Tier 1 certification process?',
-    'What are the ESG reporting requirements?'
+    'What is supplier inclusion and how is it different from supplier diversity?',
+    'What are AbbVie\'s four pillars of supplier inclusion?',
+    'How does AbbVie measure and track supplier inclusion progress?',
+    'What role does environmental stewardship play in AbbVie\'s supplier strategy?',
   ];
 
   const sendMessage = async (text) => {
@@ -2916,7 +2916,7 @@ function ChatScreen({ user, onAdmin, onLogout }) {
           </div>
 
           <div className="sidebar-body">
-            <div className="sidebar-sec">Suggested <span className="cnt">{chips.length}</span></div>
+            <div className="sidebar-sec">Start here <span className="cnt">{chips.length}</span></div>
             <div className="sidebar-chips">
               {chips.map((c, i) => (
                 <div key={c} className="sidebar-chip" onClick={() => sendMessage(c)}>
@@ -3061,7 +3061,7 @@ function ChatScreen({ user, onAdmin, onLogout }) {
                     )}
 
                     {!msg.escalated && msg.conf >= 45 && msg.nudge && (
-                      <div className="nudge">
+                      <div className="nudge" onClick={() => sendMessage(msg.nudge)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && sendMessage(msg.nudge)}>
                         <div className="nudge-ic"><div style={{ width: 16, height: 16 }}><Icons.sparkles /></div></div>
                         <span>{msg.nudge}</span>
                         <span className="arr">EXPLORE →</span>
