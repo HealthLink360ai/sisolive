@@ -333,9 +333,9 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
 .login-help a:hover { border-bottom-color: var(--teal-deep); color: var(--teal-deep); }
 
 .login-hero {
-  align-self: start;
+  align-self: center;
   max-width: 560px;
-  padding-top: 28px;
+  padding-top: 0;
 }
 .login-pill {
   display: inline-flex; align-items: center; gap: 10px;
@@ -358,7 +358,7 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
 }
 .login-headline {
   font-family: var(--sans);
-  font-size: clamp(42px, 5.4vw, 58px);
+  font-size: clamp(48px, 5.8vw, 66px);
   font-weight: 400;
   line-height: 1.06;
   letter-spacing: -0.035em;
@@ -2566,6 +2566,23 @@ function LoginScreen({ onLogin, signedOut, onDismissSignedOut }) {
             confidence, and make faster decisions across supplier inclusion
             and sustainability work.
           </p>
+          <div className="login-feats">
+            <div className="login-feat f-1">
+              <div className="ic"><div style={{ width: 18, height: 18 }}><Icons.shield /></div></div>
+              <h5>Verified answers</h5>
+              <p>Every response sourced from AbbVie's official supplier inclusion content.</p>
+            </div>
+            <div className="login-feat f-2">
+              <div className="ic"><div style={{ width: 18, height: 18 }}><Icons.message /></div></div>
+              <h5>Precision coaching</h5>
+              <p>Trainer-style guidance that builds real understanding, not just facts.</p>
+            </div>
+            <div className="login-feat f-3">
+              <div className="ic"><div style={{ width: 18, height: 18 }}><Icons.target /></div></div>
+              <h5>Track progress</h5>
+              <p>Monitor your knowledge growth across all supplier inclusion topics.</p>
+            </div>
+          </div>
         </div>
       </div>
 
