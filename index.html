@@ -838,7 +838,7 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
 }
 .onboard-card .ic {
   width: 36px; height: 36px; border-radius: 9px;
-  background: var(--ink); color: var(--teal);
+  background: var(--abbvie-blue); color: var(--teal);
   display: flex; align-items: center; justify-content: center;
   margin-bottom: 18px;
 }
@@ -2652,7 +2652,7 @@ function OnboardScreen({ user, onEnter }) {
       <div className="onboard-inner fade-up">
         <div className="onboard-top">
           <div className="onboard-brand">
-            <div className="mark"><div style={{ width: 16, height: 16 }}><Icons.atom /></div></div>
+            <img src="assets/abbvie-logo-white.png" alt="AbbVie" style={{ height: 22, opacity: 0.9 }} />
             <span className="name">SISO <em>Live!</em></span>
           </div>
           <div className="onboard-skip-link" onClick={onEnter}>
@@ -4024,7 +4024,9 @@ function App() {
   const [screen, setScreen] = useState(() => {
     try {
       const u = localStorage.getItem(USER_KEY);
-      return u ? 'chat' : 'login';
+      if (!u) return 'login';
+      const seen = localStorage.getItem('siso_onboard_done');
+      return seen ? 'chat' : 'onboard';
     } catch { return 'login'; }
   });
   const [user, setUser] = useState(() => {
