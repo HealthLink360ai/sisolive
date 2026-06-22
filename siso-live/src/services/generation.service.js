@@ -113,7 +113,7 @@ INSTRUCTIONS: Document chunks are present above — you MUST answer from them. D
   try {
     const response = await anthropic.messages.create({
       model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6',
-      max_tokens: 1024,
+      max_tokens: 512,
       system: systemPrompt,
       messages,
     });

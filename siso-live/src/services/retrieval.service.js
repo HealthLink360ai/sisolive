@@ -21,7 +21,7 @@ const envThreshold = parseFloat(process.env.CONFIDENCE_THRESHOLD);
 const CONFIDENCE_THRESHOLD = (!isNaN(envThreshold) && envThreshold > 0)
   ? Math.min(envThreshold, 0.35)
   : 0.25;
-const MAX_CHUNKS = parseInt(process.env.MAX_CHUNKS_TO_RETRIEVE) || 5;
+const MAX_CHUNKS = parseInt(process.env.MAX_CHUNKS_TO_RETRIEVE) || 3;
 
 /**
  * Search for relevant document chunks given a user question
