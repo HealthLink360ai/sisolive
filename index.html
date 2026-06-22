@@ -292,7 +292,7 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
   height: 100%;
   width: auto;
   display: block;
-  filter: invert(1);
+  mix-blend-mode: multiply;
 }
 .login-lockup .lockup-sep {
   width: 1px; height: 26px;
@@ -391,15 +391,15 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
 }
 .login-feat { min-width: 0; }
 .login-feat .ic {
-  width: 38px; height: 38px; border-radius: 50%;
+  width: 46px; height: 46px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   margin-bottom: 14px;
   background: var(--paper-3);
   border: 1px solid var(--rule);
 }
-.login-feat.f-1 .ic { background: rgba(46,140,91,0.10); color: var(--positive); border-color: rgba(46,140,91,0.20); }
-.login-feat.f-2 .ic { background: rgba(150,124,210,0.12); color: #6B5BB0; border-color: rgba(107,91,176,0.22); }
-.login-feat.f-3 .ic { background: rgba(45,91,255,0.10); color: var(--signal); border-color: rgba(45,91,255,0.20); }
+.login-feat.f-1 .ic { background: rgba(13,27,42,0.07); border-color: rgba(13,27,42,0.14); }
+.login-feat.f-2 .ic { background: rgba(232,139,66,0.10); border-color: rgba(232,139,66,0.22); }
+.login-feat.f-3 .ic { background: rgba(21,183,154,0.10); border-color: rgba(21,183,154,0.22); }
 .login-feat h5 {
   font-size: 15px; font-weight: 600; letter-spacing: -0.01em;
   color: var(--ink); margin-bottom: 6px;
@@ -466,10 +466,8 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
   filter: drop-shadow(0 14px 16px rgba(11,19,32,0.18));
   animation: botFloat 5.5s ease-in-out infinite;
   will-change: transform;
-  /* Teal-tinted oval in the visor zone so the transparent face shield reads as glass */
-  background: radial-gradient(ellipse 58% 32% at 50% 19%, rgba(21,183,154,0.22) 0%, rgba(21,183,154,0.06) 55%, transparent 80%);
 }
-.login-bot img { width: 100%; height: auto; display: block; }
+.login-bot img { width: 100%; height: auto; display: block; mix-blend-mode: multiply; }
 @keyframes botFloat {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-9px); }
@@ -2547,7 +2545,7 @@ function LoginScreen({ onLogin, signedOut, onDismissSignedOut }) {
       <div className="login-left fade-in">
         <div className="login-left-top">
           <div className="login-lockup">
-            <div className="org-mark"><img src="assets/abbvie-logo-white.png" alt="AbbVie" /></div>
+            <div className="org-mark"><img src="assets/abbvie-logo-navy.png" alt="AbbVie" /></div>
             <div className="lockup-sep"></div>
             <div className="product">
               <span className="wm">SISO <em>Live!</em></span>
@@ -2570,17 +2568,17 @@ function LoginScreen({ onLogin, signedOut, onDismissSignedOut }) {
           </p>
           <div className="login-feats">
             <div className="login-feat f-1">
-              <div className="ic"><div style={{ width: 18, height: 18 }}><Icons.shield /></div></div>
+              <div className="ic"><img src="assets/icon-verified.png" alt="" style={{ width: 24, height: 24, mixBlendMode: 'multiply' }} /></div>
               <h5>Verified answers</h5>
               <p>Every response sourced from AbbVie's official supplier inclusion content.</p>
             </div>
             <div className="login-feat f-2">
-              <div className="ic"><div style={{ width: 18, height: 18 }}><Icons.message /></div></div>
+              <div className="ic"><img src="assets/icon-coaching.png" alt="" style={{ width: 24, height: 24, mixBlendMode: 'multiply' }} /></div>
               <h5>Precision coaching</h5>
               <p>Trainer-style guidance that builds real understanding, not just facts.</p>
             </div>
             <div className="login-feat f-3">
-              <div className="ic"><div style={{ width: 18, height: 18 }}><Icons.target /></div></div>
+              <div className="ic"><img src="assets/icon-progress.png" alt="" style={{ width: 24, height: 24, mixBlendMode: 'multiply' }} /></div>
               <h5>Track progress</h5>
               <p>Monitor your knowledge growth across all supplier inclusion topics.</p>
             </div>
@@ -2589,7 +2587,7 @@ function LoginScreen({ onLogin, signedOut, onDismissSignedOut }) {
       </div>
 
       <div className="login-bot">
-        <img src="assets/abbvie-bot-sm.png" alt="AbbVie assistant" />
+        <img src="assets/abbvie-bot-2.png" alt="AbbVie assistant" />
       </div>
 
       <div className="login-right fade-up" style={{ padding: "32px 36px 32px 6px" }}>
@@ -2671,7 +2669,7 @@ function OnboardScreen({ user, onEnter }) {
       <div className="onboard-inner fade-up">
         <div className="onboard-top">
           <div className="onboard-brand">
-            <img src="assets/abbvie-logo-white.png" alt="AbbVie" style={{ height: 22, opacity: 0.9 }} />
+            <img src="assets/abbvie-logo-navy.png" alt="AbbVie" style={{ height: 22, mixBlendMode: 'multiply' }} />
             <span className="name">SISO <em>Live!</em></span>
           </div>
           <div className="onboard-skip-link" onClick={onEnter}>
