@@ -3471,6 +3471,11 @@ function AdminDashboard() {
   const escalationRate = s.escalationRate ?? s.escalation_rate ?? '—';
   const topQueries = s.topQueries || s.top_queries || [];
   const knowledgeGaps = s.knowledgeGaps || s.knowledge_gaps || [];
+  const normalizeInsight = (value) => String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  const topQueryKeys = new Set(topQueries.map(([t]) => normalizeInsight(t)));
+  const uniqueKnowledgeGaps = knowledgeGaps
+    .filter(([t]) => !topQueryKeys.has(normalizeInsight(t)))
+    .slice(0, 4);
 
   return (
     <>
@@ -3518,16 +3523,16 @@ function AdminDashboard() {
           <div className="panel-head">
             <div className="panel-title">
               <span className="panel-title-ic"><Icons.chart /></span>
-              Top queries <em>this month</em>
+              Frequent <em>questions</em>
             </div>
-            <span className="panel-tag">RANKED BY VOLUME</span>
+            <span className="panel-tag">WHAT PEOPLE ASK MOST</span>
           </div>
           <div className="panel-body">
             {topQueries.length === 0 ? (
               <div style={{ padding: '24px 12px', color: 'var(--text-3)', fontSize: 13, textAlign: 'center' }}>
                 No query data yet
               </div>
-            ) : topQueries.slice(0, 5).map(([t, c, w], i) => (
+            ) : topQueries.slice(0, 4).map(([t, c, w], i) => (
               <div key={t} className="q-row">
                 <span className="q-rank">{String(i + 1).padStart(2, '0')}</span>
                 <span className="q-text">{t}</span>
@@ -3542,16 +3547,16 @@ function AdminDashboard() {
           <div className="panel-head">
             <div className="panel-title">
               <span className="panel-title-ic"><Icons.alert /></span>
-              Knowledge <em>gaps</em>
+              Needs <em>content</em>
             </div>
-            <span className="panel-tag">ESCALATED · NEEDS CONTENT</span>
+            <span className="panel-tag">SEPARATE FROM FREQUENT QUESTIONS</span>
           </div>
           <div className="panel-body">
-            {knowledgeGaps.length === 0 ? (
+            {uniqueKnowledgeGaps.length === 0 ? (
               <div style={{ padding: '24px 12px', color: 'var(--text-3)', fontSize: 13, textAlign: 'center' }}>
-                No gaps identified yet
+                No separate gaps beyond the frequent questions list.
               </div>
-            ) : knowledgeGaps.slice(0, 4).map(([t, c]) => (
+            ) : uniqueKnowledgeGaps.map(([t, c]) => (
               <div key={t} className="gap-row">
                 <div className="gap-dot" />
                 <span className="gap-text">{t}</span>
