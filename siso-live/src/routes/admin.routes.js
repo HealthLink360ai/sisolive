@@ -37,6 +37,25 @@ function isDomainRelevantQuestion(question) {
   return domainTerms.some(term => text.includes(term));
 }
 
+function questionTokens(question) {
+  const stopWords = new Set(['what', 'is', 'are', 'the', 'a', 'an', 'and', 'or', 'of', 'to', 'how', 'does', 'do', 'abbvie']);
+  return String(question || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .split(/\s+/)
+    .filter(token => token && !stopWords.has(token));
+}
+
+function isSimilarQuestion(a, b) {
+  const aTokens = new Set(questionTokens(a));
+  const bTokens = new Set(questionTokens(b));
+  if (aTokens.size === 0 || bTokens.size === 0) return false;
+
+  const shared = [...aTokens].filter(token => bTokens.has(token)).length;
+  const smaller = Math.min(aTokens.size, bTokens.size);
+  return shared / smaller >= 0.67;
+}
+
 // GET /api/admin/stats + /api/admin/dashboard — summary metrics
 async function dashboardHandler(req, res) {
   const currentMonth = new Date().toISOString().slice(0, 7);
@@ -80,6 +99,7 @@ async function dashboardHandler(req, res) {
 
     const knowledgeGaps = gapsResult.rows
       .filter(r => isDomainRelevantQuestion(r.question))
+      .filter(r => !topQRows.some(top => isSimilarQuestion(r.question, top.question)))
       .map(r => [r.question, parseInt(r.count)]);
 
     res.json({
