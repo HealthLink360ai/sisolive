@@ -2536,6 +2536,20 @@ const AdminAPI = {
     if (!r.ok) throw new Error('Failed to run diagnostics');
     return r.json();
   },
+  async getEscalations() {
+    const r = await fetch(`${API_BASE}/api/admin/analytics/escalations`, {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+    if (!r.ok) throw new Error('Failed to load escalations');
+    return r.json();
+  },
+  async getFeedback() {
+    const r = await fetch(`${API_BASE}/api/admin/analytics/feedback`, {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+    if (!r.ok) throw new Error('Failed to load feedback');
+    return r.json();
+  },
 };
 
 const { useState, useRef, useEffect } = React;
@@ -3028,7 +3042,14 @@ function ChatScreen({ user, onAdmin, onLogout, onRewatch }) {
       <div className="chat-screen">
         <div className="sidebar">
           <div className="sidebar-top">
-            <button className="new-conv-btn">
+            <button className="new-conv-btn" onClick={() => {
+              setMessages([{
+                id: Date.now(), role: 'ai',
+                text: `Hello ${firstName}, I'm SISO Live!, your precision learning tool for supplier inclusion and sustainability. What would you like to explore today?`,
+                conf: null, source: null, nudge: null, feedback: null, showComment: false, comment: ''
+              }]);
+              setInput('');
+            }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <div style={{ width: 14, height: 14, color: 'var(--text-2)' }}><Icons.plus /></div>
                 New conversation
@@ -3072,7 +3093,7 @@ function ChatScreen({ user, onAdmin, onLogout, onRewatch }) {
                 <div className="verified-dot" />
                 Sourced from verified AbbVie docs
               </div>
-              <div className="chat-actions">
+              <div className="chat-actions" style={{ display: 'none' }}>
                 <button className="chat-action-btn" title="Share"><div style={{ width: 15, height: 15 }}><Icons.share /></div></button>
                 <button className="chat-action-btn" title="More"><div style={{ width: 15, height: 15 }}><Icons.more /></div></button>
               </div>
@@ -3197,10 +3218,10 @@ function ChatScreen({ user, onAdmin, onLogout, onRewatch }) {
                           <div className="escalate-title">This is best handled by the SISO <em>support team</em>.</div>
                           <div className="escalate-desc">They'll provide a precise, verified answer. Typical response under 24 hours.</div>
                         </div>
-                        <button className="escalate-btn">
-                          Open ticket
+                        <a className="escalate-btn" href="mailto:siso-support@abbvie.com" style={{ textDecoration: 'none' }}>
+                          Contact support
                           <div style={{ width: 10, height: 10 }}><Icons.arrow /></div>
-                        </button>
+                        </a>
                       </div>
                     )}
                   </div>
@@ -3238,8 +3259,6 @@ function ChatScreen({ user, onAdmin, onLogout, onRewatch }) {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && !typing && sendMessage()} />
                 <div className="chat-input-actions">
-                  <button className="input-action-btn" title="Attach"><div style={{ width: 15, height: 15 }}><Icons.attach /></div></button>
-                  <button className="input-action-btn" title="Voice"><div style={{ width: 15, height: 15 }}><Icons.mic /></div></button>
                   <button className="send-btn" onClick={() => sendMessage()} disabled={typing || !input.trim()}>
                     <div style={{ width: 14, height: 14 }}><Icons.send /></div>
                   </button>
@@ -3419,30 +3438,6 @@ function AdminDashboard() {
         </div>
       </div>
 
-      {topQueries.length > 0 && (
-        <div className="panel" style={{ gridColumn: '1 / -1' }}>
-          <div className="panel-head">
-            <div className="panel-title">
-              <span className="panel-title-ic"><Icons.message /></span>
-              Question <em>distribution</em>
-            </div>
-            <span className="panel-tag">WHERE USERS ARE ASKING</span>
-          </div>
-          <div className="panel-body" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 10 }}>
-            {topQueries.slice(0, 6).map(([t, c, w], i) => (
-              <div key={t} style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '10px 14px', background: 'var(--paper-tinted)', border: '1px solid var(--rule)', borderRadius: 'var(--r)' }}>
-                <div style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.4 }}>{t}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ flex: 1, height: 4, borderRadius: 2, background: 'var(--paper-2)', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${w}%`, background: 'var(--abbvie-blue)', borderRadius: 2 }} />
-                  </div>
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--text-3)', flexShrink: 0 }}>{c}×</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </>
   );
 }
@@ -3842,109 +3837,84 @@ function AdminDocs() {
   );
 }
 
-/* ============================================================
-   ADMIN — ANALYTICS (static reporting view)
-   ============================================================ */
-function AdminAnalytics() {
-  const trend = [40, 52, 48, 64, 78, 72, 88, 94, 102, 96, 118, 142, 138, 156];
-  const max = Math.max(...trend);
-  return (
-    <>
-      <div className="metrics-grid">
-        <div className="metric">
-          <div className="metric-head"><div className="metric-lbl">Queries / day (avg)</div><div className="metric-ic"><Icons.chart /></div></div>
-          <div className="metric-val">—</div>
-          <div className="metric-foot"><span>loading…</span></div>
-        </div>
-        <div className="metric">
-          <div className="metric-head"><div className="metric-lbl">Unique questions</div><div className="metric-ic"><Icons.message /></div></div>
-          <div className="metric-val">—</div>
-          <div className="metric-foot"><span>loading…</span></div>
-        </div>
-        <div className="metric">
-          <div className="metric-head"><div className="metric-lbl">Avg response time</div><div className="metric-ic"><Icons.refresh /></div></div>
-          <div className="metric-val green">—</div>
-          <div className="metric-foot"><span>P95 target: 3s</span></div>
-        </div>
-        <div className="metric">
-          <div className="metric-head"><div className="metric-lbl">Resolved by AI</div><div className="metric-ic"><Icons.check /></div></div>
-          <div className="metric-val green">—</div>
-          <div className="metric-foot"><span>rest escalated</span></div>
-        </div>
-      </div>
-
-      <div className="panel">
-        <div className="panel-head"><div className="panel-title"><span className="panel-title-ic"><Icons.chart /></span>Query <em>volume</em></div><span className="panel-tag">DAILY · LAST 14 DAYS</span></div>
-        <div className="panel-body" style={{ padding: '20px 24px 16px' }}>
-          <div className="chart-area">
-            {trend.map((v, i) => (
-              <div key={i} className="chart-bar" style={{ height: `${v / max * 100}%` }}>
-                <span className="chart-bar-val">{v}</span>
-              </div>
-            ))}
-          </div>
-          <div className="chart-axis">
-            {['M','T','W','T','F','S','S','M','T','W','T','F','S','S'].map((d, i) => (
-              <span key={i}>{d}</span>
-            ))}
-          </div>
-        </div>
-      </div>
-    </>
-  );
-}
 
 /* ============================================================
    ADMIN — ESCALATIONS
    ============================================================ */
 function AdminEscalations() {
-  const items = [
-    { q: 'How do I calculate Scope 3 emissions for our top 10 suppliers?', user: 'User', role: 'ESG Analyst', when: 'recently', state: 'open', conf: 71 },
-    { q: 'What is the deadline for supplier inclusion attestations?', user: 'User', role: 'Procurement', when: 'recently', state: 'open', conf: 64 }
-  ];
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    AdminAPI.getEscalations()
+      .then(d => { setItems(Array.isArray(d) ? d : []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const fmtDate = (s) => {
+    if (!s) return '—';
+    const d = new Date(s);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  };
+
   return (
     <>
       <div className="metrics-grid">
         <div className="metric">
-          <div className="metric-head"><div className="metric-lbl">Open</div><div className="metric-ic"><Icons.alert /></div></div>
-          <div className="metric-val amber">—</div>
-          <div className="metric-foot"><span>this week</span></div>
+          <div className="metric-head"><div className="metric-lbl">Total (30d)</div><div className="metric-ic"><Icons.alert /></div></div>
+          <div className="metric-val amber">{loading ? '—' : items.length}</div>
+          <div className="metric-foot"><span>questions escalated</span></div>
         </div>
         <div className="metric">
-          <div className="metric-head"><div className="metric-lbl">Assigned</div><div className="metric-ic"><Icons.users /></div></div>
-          <div className="metric-val">—</div>
-          <div className="metric-foot"><span>across desks</span></div>
+          <div className="metric-head"><div className="metric-lbl">Avg confidence</div><div className="metric-ic"><Icons.target /></div></div>
+          <div className="metric-val">
+            {loading || items.length === 0 ? '—' : Math.round(items.reduce((s, it) => s + (parseFloat(it.confidence_score) || 0), 0) / items.length * 100) + '%'}
+          </div>
+          <div className="metric-foot"><span>at time of escalation</span></div>
         </div>
         <div className="metric">
-          <div className="metric-head"><div className="metric-lbl">Avg response</div><div className="metric-ic"><Icons.refresh /></div></div>
-          <div className="metric-val green">—</div>
-          <div className="metric-foot"><span>SLA: 24 hours</span></div>
+          <div className="metric-head"><div className="metric-lbl">Below 40%</div><div className="metric-ic"><Icons.refresh /></div></div>
+          <div className="metric-val amber">
+            {loading ? '—' : items.filter(it => parseFloat(it.confidence_score) < 0.40).length}
+          </div>
+          <div className="metric-foot"><span>very low confidence</span></div>
         </div>
         <div className="metric">
-          <div className="metric-head"><div className="metric-lbl">Resolved (30d)</div><div className="metric-ic"><Icons.check /></div></div>
-          <div className="metric-val green">—</div>
-          <div className="metric-foot"><span>vs last month</span></div>
+          <div className="metric-head"><div className="metric-lbl">Unique questions</div><div className="metric-ic"><Icons.message /></div></div>
+          <div className="metric-val">
+            {loading ? '—' : new Set(items.map(it => it.question)).size}
+          </div>
+          <div className="metric-foot"><span>distinct escalations</span></div>
         </div>
       </div>
       <div className="panel">
         <div className="panel-head">
-          <div className="panel-title"><span className="panel-title-ic"><Icons.alert /></span>Escalation <em>queue</em></div>
+          <div className="panel-title"><span className="panel-title-ic"><Icons.alert /></span>Escalation <em>log</em></div>
+          <span className="panel-tag">LAST 30 DAYS · {loading ? '…' : items.length} ITEMS</span>
         </div>
         <div className="panel-body" style={{ padding: '4px 12px 12px' }}>
-          {items.map((it) => (
-            <div key={it.q} className="esc-row">
-              <span className={`esc-state ${it.state}`}>{it.state.toUpperCase()}</span>
-              <div className="esc-main">
-                <div className="esc-q">{it.q}</div>
-                <div className="esc-meta">{it.user} · {it.role} · {it.when}</div>
+          {loading && <div style={{ padding: '24px 12px', color: 'var(--text-3)', fontSize: 13, textAlign: 'center' }}>Loading…</div>}
+          {!loading && items.length === 0 && (
+            <div style={{ padding: '24px 12px', color: 'var(--text-3)', fontSize: 13, textAlign: 'center' }}>No escalations in the last 30 days.</div>
+          )}
+          {!loading && items.map((it, i) => {
+            const conf = it.confidence_score != null ? Math.round(parseFloat(it.confidence_score) * 100) : null;
+            return (
+              <div key={i} className="esc-row">
+                <span className="esc-state open">ESCALATED</span>
+                <div className="esc-main">
+                  <div className="esc-q">{it.question}</div>
+                  <div className="esc-meta">{fmtDate(it.created_at)}</div>
+                </div>
+                {conf != null && (
+                  <div className="esc-conf">
+                    <div className="esc-conf-lbl">CONF</div>
+                    <div className={`esc-conf-v ${conf < 40 ? 'warn' : ''}`}>{conf}%</div>
+                  </div>
+                )}
               </div>
-              <div className="esc-conf">
-                <div className="esc-conf-lbl">CONF</div>
-                <div className={`esc-conf-v ${it.conf < 75 ? 'warn' : ''}`}>{it.conf}%</div>
-              </div>
-              <button className="esc-open">Open<div style={{ width: 11, height: 11 }}><Icons.arrow /></div></button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </>
@@ -3955,79 +3925,88 @@ function AdminEscalations() {
    ADMIN — FEEDBACK
    ============================================================ */
 function AdminFeedback() {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    AdminAPI.getFeedback()
+      .then(d => { setItems(Array.isArray(d) ? d : []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const helpful = items.filter(it => it.rating === 'up' || it.rating === 1 || it.rating === true).length;
+  const notHelpful = items.filter(it => it.rating === 'down' || it.rating === -1 || it.rating === false).length;
+  const withComments = items.filter(it => it.comment && it.comment.trim()).length;
+
+  const fmtDate = (s) => {
+    if (!s) return '—';
+    const d = new Date(s);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
   return (
     <>
       <div className="metrics-grid">
         <div className="metric">
           <div className="metric-head"><div className="metric-lbl">Helpful</div><div className="metric-ic"><Icons.thumbup /></div></div>
-          <div className="metric-val green">—</div>
-          <div className="metric-foot"><span>rated helpful</span></div>
+          <div className="metric-val green">{loading ? '—' : helpful}</div>
+          <div className="metric-foot"><span>rated helpful (30d)</span></div>
         </div>
         <div className="metric">
           <div className="metric-head"><div className="metric-lbl">Not helpful</div><div className="metric-ic"><Icons.thumbdown /></div></div>
-          <div className="metric-val amber">—</div>
+          <div className="metric-val amber">{loading ? '—' : notHelpful}</div>
           <div className="metric-foot"><span>rated not helpful</span></div>
         </div>
         <div className="metric">
           <div className="metric-head"><div className="metric-lbl">With comments</div><div className="metric-ic"><Icons.message /></div></div>
-          <div className="metric-val">—</div>
-          <div className="metric-foot"><span>rich signal</span></div>
+          <div className="metric-val">{loading ? '—' : withComments}</div>
+          <div className="metric-foot"><span>detailed signal</span></div>
         </div>
         <div className="metric">
-          <div className="metric-head"><div className="metric-lbl">Triaged</div><div className="metric-ic"><Icons.check /></div></div>
-          <div className="metric-val">—</div>
-          <div className="metric-foot"><span>awaiting review</span></div>
+          <div className="metric-head"><div className="metric-lbl">Satisfaction</div><div className="metric-ic"><Icons.check /></div></div>
+          <div className="metric-val green">
+            {loading || items.length === 0 ? '—' : <>{Math.round((helpful / items.length) * 100)}<span className="pct">%</span></>}
+          </div>
+          <div className="metric-foot"><span>of rated responses</span></div>
         </div>
       </div>
       <div className="panel">
         <div className="panel-head">
           <div className="panel-title"><span className="panel-title-ic"><Icons.thumbup /></span>Recent <em>feedback</em></div>
+          <span className="panel-tag">LAST 30 DAYS · {loading ? '…' : items.length} ITEMS</span>
         </div>
-        <div style={{ padding: '40px 20px', color: 'var(--text-3)', fontSize: 14, textAlign: 'center' }}>
-          Feedback will appear here as users rate answers.
+        <div className="panel-body" style={{ padding: '4px 12px 12px' }}>
+          {loading && <div style={{ padding: '24px 12px', color: 'var(--text-3)', fontSize: 13, textAlign: 'center' }}>Loading…</div>}
+          {!loading && items.length === 0 && (
+            <div style={{ padding: '24px 12px', color: 'var(--text-3)', fontSize: 14, textAlign: 'center' }}>
+              Feedback will appear here as users rate answers.
+            </div>
+          )}
+          {!loading && items.map((it, i) => {
+            const isUp = it.rating === 'up' || it.rating === 1 || it.rating === true;
+            return (
+              <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '10px 0', borderBottom: '1px solid var(--rule)' }}>
+                <div style={{
+                  width: 28, height: 28, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: isUp ? 'var(--teal-soft, #e6f4f1)' : 'var(--signal-soft)',
+                  color: isUp ? 'var(--teal)' : 'var(--signal)'
+                }}>
+                  <div style={{ width: 14, height: 14 }}>{isUp ? <Icons.thumbup /> : <Icons.thumbdown />}</div>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.4, marginBottom: 3 }}>{it.question}</div>
+                  {it.comment && <div style={{ fontSize: 12, color: 'var(--text-2)', fontStyle: 'italic', lineHeight: 1.4 }}>"{it.comment}"</div>}
+                </div>
+                <span style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--text-3)', flexShrink: 0 }}>{fmtDate(it.created_at)}</span>
+              </div>
+            );
+          })}
         </div>
       </div>
     </>
   );
 }
 
-/* ============================================================
-   ADMIN — ACCURACY
-   ============================================================ */
-function AdminAccuracy() {
-  return (
-    <>
-      <div className="metrics-grid">
-        <div className="metric">
-          <div className="metric-head"><div className="metric-lbl">Avg confidence</div><div className="metric-ic"><Icons.target /></div></div>
-          <div className="metric-val green">—</div>
-          <div className="metric-foot"><span>90% threshold</span></div>
-        </div>
-        <div className="metric">
-          <div className="metric-head"><div className="metric-lbl">Above threshold</div><div className="metric-ic"><Icons.check /></div></div>
-          <div className="metric-val">—</div>
-          <div className="metric-foot"><span>of answers</span></div>
-        </div>
-        <div className="metric">
-          <div className="metric-head"><div className="metric-lbl">Below threshold</div><div className="metric-ic"><Icons.alert /></div></div>
-          <div className="metric-val amber">—</div>
-          <div className="metric-foot"><span>auto-routed</span></div>
-        </div>
-        <div className="metric">
-          <div className="metric-head"><div className="metric-lbl">Threshold</div><div className="metric-ic"><Icons.settings /></div></div>
-          <div className="metric-val">90<span className="pct">%</span></div>
-          <div className="metric-foot"><span>minimum confidence</span></div>
-        </div>
-      </div>
-      <div className="panel">
-        <div className="panel-head"><div className="panel-title"><span className="panel-title-ic"><Icons.target /></span>Topic accuracy <em>breakdown</em></div><span className="panel-tag">90% CONFIDENCE THRESHOLD</span></div>
-        <div style={{ padding: '40px 20px', color: 'var(--text-3)', fontSize: 14, textAlign: 'center' }}>
-          Accuracy data will populate as queries come in.
-        </div>
-      </div>
-    </>
-  );
-}
 
 /* ============================================================
    ADMIN SCREEN
@@ -4038,26 +4017,22 @@ function AdminScreen({ user, onBack, onLogout, onRewatch }) {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', section: 'Overview' },
     { id: 'users', label: 'User activity', icon: 'users', section: '' },
-    { id: 'upload', label: 'Upload content', icon: 'upload', section: 'Knowledge base' },
+    { id: 'upload', label: 'Add content', icon: 'upload', section: 'Knowledge base' },
     { id: 'docs', label: 'Manage docs', icon: 'files', section: '' },
-    { id: 'analytics', label: 'Query analytics', icon: 'chart', section: 'Insights' },
-    { id: 'escalations', label: 'Escalations', icon: 'alert', section: '' },
+    { id: 'escalations', label: 'Escalations', icon: 'alert', section: 'Insights' },
     { id: 'feedback', label: 'Feedback', icon: 'thumbup', section: '' },
-    { id: 'accuracy', label: 'Accuracy', icon: 'target', section: '' }
   ];
 
   const tabLabel = {
     dashboard: 'Overview · Last 30 days', users: 'People · Last 30 days',
-    upload: 'Knowledge base · Ingestion', docs: 'Knowledge base · Documents',
-    analytics: 'Insights · Query patterns', escalations: 'Insights · Open queue',
-    feedback: 'Insights · User signal', accuracy: 'Insights · Confidence by topic'
+    upload: 'Knowledge base · Add content', docs: 'Knowledge base · Documents',
+    escalations: 'Insights · Escalation log', feedback: 'Insights · User signal',
   };
 
   const tabH2 = {
     dashboard: <><em>Dashboard</em> overview</>, users: <>User <em>activity</em></>,
-    upload: <>Upload <em>content</em></>, docs: <>Manage <em>documents</em></>,
-    analytics: <>Query <em>analytics</em></>, escalations: <>Escalations <em>queue</em></>,
-    feedback: <>User <em>feedback</em></>, accuracy: <>Topic <em>accuracy</em></>
+    upload: <>Add <em>content</em></>, docs: <>Manage <em>documents</em></>,
+    escalations: <>Escalation <em>log</em></>, feedback: <>User <em>feedback</em></>,
   };
 
   return (
@@ -4129,10 +4104,8 @@ function AdminScreen({ user, onBack, onLogout, onRewatch }) {
           {activeTab === 'users' && <AdminUsers />}
           {activeTab === 'upload' && <AdminUpload />}
           {activeTab === 'docs' && <AdminDocs />}
-          {activeTab === 'analytics' && <AdminAnalytics />}
           {activeTab === 'escalations' && <AdminEscalations />}
           {activeTab === 'feedback' && <AdminFeedback />}
-          {activeTab === 'accuracy' && <AdminAccuracy />}
         </div>
       </div>
     </div>
