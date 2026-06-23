@@ -699,44 +699,87 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
 }
 .onboard-video-caption {
   font-family: var(--mono);
-  font-size: 10.5px;
-  letter-spacing: 0.05em;
-  color: var(--text-3);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--text-2);
   display: flex;
   align-items: center;
   gap: 8px;
+  padding: 12px 0 6px;
 }
-.onboard-si-grid {
+.onboard-steps {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 32px;
+  gap: 14px;
   margin-bottom: 36px;
-  padding-top: 4px;
+  padding-top: 8px;
+  position: relative;
 }
-.onboard-si-section { min-width: 0; }
-.onboard-si-label {
+/* arrow connectors between steps */
+.onboard-step {
+  padding: 26px 24px 24px;
+  background: var(--paper-3);
+  border-radius: 16px;
+  border: 1px solid var(--rule);
+  position: relative;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.onboard-step:hover { transform: translateY(-2px); box-shadow: var(--shadow-card); }
+.onboard-step:not(:last-child)::after {
+  content: '→';
+  position: absolute;
+  right: -20px;
+  top: 30px;
+  font-size: 15px;
+  color: var(--teal);
+  z-index: 2;
+  line-height: 1;
+}
+.onboard-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--teal);
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin-bottom: 18px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 10px rgba(11,19,32,0.18);
+}
+.onboard-step-label {
+  font-family: var(--mono);
+  font-size: 10.5px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--teal-deep);
   font-weight: 600;
-  margin-bottom: 7px;
+  margin-bottom: 8px;
 }
-.onboard-si-heading {
-  font-size: 15px;
+.onboard-step-heading {
+  font-size: 18px;
   font-weight: 600;
   letter-spacing: -0.02em;
   color: var(--ink);
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+  line-height: 1.25;
 }
-.onboard-si-body {
-  font-size: 13.5px;
+.onboard-step-body {
+  font-size: 14.5px;
   color: var(--text-2);
   line-height: 1.65;
+  flex: 1;
 }
 @media (max-width: 700px) {
-  .onboard-si-grid { grid-template-columns: 1fr; gap: 24px; }
+  .onboard-steps { grid-template-columns: 1fr; gap: 20px; }
+  .onboard-step:not(:last-child)::after { content: '↓'; right: auto; left: 50%; top: auto; bottom: -18px; transform: translateX(-50%); }
 }
 .onboard-top {
   display: flex; justify-content: space-between; align-items: center;
@@ -2952,11 +2995,12 @@ function OnboardScreen({ user, onEnter }) {
           </div>
         </div>
 
-        <div className="onboard-si-grid">
-          <div className="onboard-si-section">
-            <div className="onboard-si-label">Supplier Inclusion</div>
-            <div className="onboard-si-heading">Expanding who AbbVie does business with</div>
-            <p className="onboard-si-body">
+        <div className="onboard-steps">
+          <div className="onboard-step">
+            <div className="onboard-step-num">01</div>
+            <div className="onboard-step-label">Supplier Inclusion</div>
+            <div className="onboard-step-heading">Expanding who AbbVie does business with</div>
+            <p className="onboard-step-body">
               Supplier inclusion is AbbVie's commitment to actively partnering with businesses owned by
               underrepresented groups, including minority, women, veteran, LGBTQ+, and disability-owned
               enterprises. It's a strategic priority to broaden our supply chain, strengthen communities,
@@ -2964,10 +3008,11 @@ function OnboardScreen({ user, onEnter }) {
             </p>
           </div>
 
-          <div className="onboard-si-section">
-            <div className="onboard-si-label">Sustainability</div>
-            <div className="onboard-si-heading">Responsible sourcing beyond the bottom line</div>
-            <p className="onboard-si-body">
+          <div className="onboard-step">
+            <div className="onboard-step-num">02</div>
+            <div className="onboard-step-label">Sustainability</div>
+            <div className="onboard-step-heading">Responsible sourcing beyond the bottom line</div>
+            <p className="onboard-step-body">
               AbbVie's sustainability goals focus on environmental stewardship: reducing carbon
               emissions, water usage, and waste, while measuring the social and governance impact of
               our supply chain decisions. Together, supplier inclusion and sustainability form the
@@ -2975,10 +3020,11 @@ function OnboardScreen({ user, onEnter }) {
             </p>
           </div>
 
-          <div className="onboard-si-section">
-            <div className="onboard-si-label">SISO Live!</div>
-            <div className="onboard-si-heading">Your precision learning coach</div>
-            <p className="onboard-si-body">
+          <div className="onboard-step">
+            <div className="onboard-step-num">03</div>
+            <div className="onboard-step-label">SISO Live!</div>
+            <div className="onboard-step-heading">Your precision learning coach</div>
+            <p className="onboard-step-body">
               SISO Live! gives you instant, verified answers from AbbVie's official supplier inclusion
               content. Ask in plain language, get grounded responses, and follow suggested questions to
               build real understanding, not just information.
