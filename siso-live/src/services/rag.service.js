@@ -28,6 +28,21 @@ async function handleQuery(question, userId, conversationHistory = [], options =
   const startTime = Date.now();
   const bypassCache = Boolean(options.bypassCache);
 
+  if (isOutOfScopeQuestion(question, conversationHistory)) {
+    logger.info({ userId, questionLength: question.length }, 'Escalating out-of-scope question before retrieval');
+    const offTopicResult = {
+      answer: null,
+      nudge: null,
+      confidence: 0,
+      confidencePercent: 0,
+      shouldEscalate: true,
+      sources: [],
+      responseTimeMs: Date.now() - startTime,
+    };
+    const queryId = await logQuery({ userId, question, ...offTopicResult });
+    return { ...offTopicResult, queryId };
+  }
+
   // Step 1: Check cache first unless QA/admin explicitly asks for a fresh retrieval path.
   const questionHash = crypto
     .createHash('md5')
@@ -114,6 +129,39 @@ async function handleQuery(question, userId, conversationHistory = [], options =
   const queryId = await logQuery({ userId, question, ...result });
 
   return { ...result, queryId };
+}
+
+function isOutOfScopeQuestion(question, conversationHistory = []) {
+  const text = String(question || '').toLowerCase();
+  const blocked = [
+    'capital city of mars',
+    'capital of mars',
+    'today\'s date',
+    'todays date',
+    'what date is it',
+    'current date',
+    'current time',
+  ];
+  if (blocked.some(term => text.includes(term))) return true;
+
+  const domainTerms = [
+    'abbvie',
+    'siso',
+    'supplier',
+    'sustainability',
+    'inclusion',
+    'underrepresented',
+    'diverse',
+    'diversity',
+    'procurement',
+    'sourcing',
+    'vendor',
+  ];
+  const hasDomainTerm = domainTerms.some(term => text.includes(term));
+  if (hasDomainTerm) return false;
+
+  // Allow natural follow-ups after the user has already started a domain conversation.
+  return (conversationHistory || []).length === 0;
 }
 
 async function logQuery({ userId, question, answer, confidence, shouldEscalate, sources, responseTimeMs, tokens }) {
