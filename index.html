@@ -4515,25 +4515,25 @@ function App() {
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <div style={{ display: screen === 'login' ? 'contents' : 'none' }}>
+      {screen === 'login' && (
         <LoginScreen onLogin={handleLogin} signedOut={signedOut} onDismissSignedOut={() => setSignedOut(false)} />
-      </div>
-      <div style={{ display: screen === 'onboard' ? 'contents' : 'none' }}>
+      )}
+      {screen === 'onboard' && (
         <OnboardScreen user={user} onEnter={() => {
           localStorage.setItem(onboardKeyFor(user), '1');
           sessionStorage.removeItem('siso_force_onboard_once');
           setScreen('chat');
         }} />
-      </div>
-      <div style={{ display: screen === 'chat' ? 'contents' : 'none' }}>
+      )}
+      {screen === 'chat' && (
         <ChatScreen user={user}
           onAdmin={isAdmin ? () => setScreen('admin') : null}
           onLogout={handleLogout}
           onRewatch={() => setScreen('onboard')} />
-      </div>
-      <div style={{ display: screen === 'admin' ? 'contents' : 'none' }}>
+      )}
+      {screen === 'admin' && (
         <AdminScreen user={user} onBack={() => setScreen('chat')} onLogout={handleLogout} onRewatch={() => setScreen('onboard')} />
-      </div>
+      )}
     </div>
   );
 }
