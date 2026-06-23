@@ -2630,7 +2630,8 @@ function parseAnswer(text) {
   const bottomMatch = body.match(bottomRx);
   let takeaway = null;
   if (bottomMatch) {
-    takeaway = bottomMatch[1].replace(/^the bottom line:\s*/i, '').trim();
+    const raw = bottomMatch[1].replace(/^the bottom line:\s*/i, '').trim();
+    takeaway = raw.charAt(0).toUpperCase() + raw.slice(1);
     body = body.replace(bottomMatch[0], '').trim();
   }
 
