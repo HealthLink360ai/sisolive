@@ -1,4 +1,5 @@
 const express = require('express');
+const bcrypt = require('bcryptjs');
 const { requireAdmin } = require('../middleware/auth');
 const { query } = require('../config/database');
 const { logger } = require('../utils/logger');
@@ -208,6 +209,46 @@ router.get('/users', async (req, res) => {
   } catch (error) {
     logger.error({ error }, 'Users fetch failed');
     res.status(500).json({ error: 'Failed to load users' });
+  }
+});
+
+// POST /api/admin/users — create or reset a learner account for controlled demos
+router.post('/users', async (req, res) => {
+  const email = String(req.body.email || '').trim().toLowerCase();
+  const name = String(req.body.name || '').trim();
+  const department = String(req.body.department || 'SISO Pilot').trim();
+  const password = String(req.body.password || '');
+
+  if (!email.endsWith('@abbvie.com')) {
+    return res.status(400).json({ error: 'Use an AbbVie email address for demo users.' });
+  }
+  if (!name) {
+    return res.status(400).json({ error: 'Name is required.' });
+  }
+  if (password.length < 12) {
+    return res.status(400).json({ error: 'Password must be at least 12 characters.' });
+  }
+
+  try {
+    const passwordHash = await bcrypt.hash(password, 10);
+    const result = await query(`
+      INSERT INTO users (email, name, role, department, password_hash, first_login, last_active)
+      VALUES ($1, $2, 'user', $3, $4, true, NOW())
+      ON CONFLICT (email) DO UPDATE SET
+        name = EXCLUDED.name,
+        role = 'user',
+        department = EXCLUDED.department,
+        password_hash = EXCLUDED.password_hash,
+        first_login = true,
+        last_active = NOW()
+      RETURNING id, email, name, role, department, first_login, created_at, last_active
+    `, [email, name, department, passwordHash]);
+
+    logger.info({ adminId: req.user.id, demoUserId: result.rows[0].id, email }, 'Demo user created or reset');
+    res.status(201).json({ user: result.rows[0] });
+  } catch (error) {
+    logger.error({ error, email }, 'Demo user create/reset failed');
+    res.status(500).json({ error: 'Failed to create demo user.' });
   }
 });
 
