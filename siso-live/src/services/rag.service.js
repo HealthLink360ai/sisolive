@@ -23,20 +23,25 @@ const crypto = require('crypto');
 /**
  * Main entry point — handles a user question end to end
  */
-async function handleQuery(question, userId, conversationHistory = []) {
+async function handleQuery(question, userId, conversationHistory = [], options = {}) {
   const startTime = Date.now();
+  const bypassCache = Boolean(options.bypassCache);
 
-  // Step 1: Check cache first — free answer if it exists
+  // Step 1: Check cache first unless QA/admin explicitly asks for a fresh retrieval path.
   const questionHash = crypto
     .createHash('md5')
     .update(question.toLowerCase().trim())
     .digest('hex');
 
-  const cached = await getCachedAnswer(questionHash);
-  if (cached) {
-    logger.info({ userId, questionHash, source: 'cache' }, 'Cache hit');
-    const queryId = await logQuery({ userId, question, ...cached, fromCache: true });
-    return { ...cached, queryId, fromCache: true };
+  if (!bypassCache) {
+    const cached = await getCachedAnswer(questionHash);
+    if (cached) {
+      logger.info({ userId, questionHash, source: 'cache' }, 'Cache hit');
+      const queryId = await logQuery({ userId, question, ...cached, fromCache: true });
+      return { ...cached, queryId, fromCache: true };
+    }
+  } else {
+    logger.info({ userId, questionHash }, 'Bypassing cache for fresh RAG retrieval');
   }
 
   // Step 2: Retrieve relevant document chunks from Pinecone
@@ -99,8 +104,10 @@ async function handleQuery(question, userId, conversationHistory = []) {
     cost,
   };
 
-  // Step 7: Cache the answer for 24 hours
-  await cacheAnswer(questionHash, result);
+  // Step 7: Cache normal answers for 24 hours. Fresh QA requests should not overwrite the cache.
+  if (!bypassCache) {
+    await cacheAnswer(questionHash, result);
+  }
 
   // Step 8: Log to database for analytics and compliance
   const queryId = await logQuery({ userId, question, ...result });

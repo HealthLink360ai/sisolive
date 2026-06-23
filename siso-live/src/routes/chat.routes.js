@@ -7,7 +7,7 @@ const router = express.Router();
 
 // POST /api/chat — main chat endpoint (also accepts /query for backwards compat)
 async function chatHandler(req, res) {
-  const { question, conversationHistory } = req.body;
+  const { question, conversationHistory, bypassCache } = req.body;
   const userId = req.user.id;
 
   if (!question || question.trim().length < 3) {
@@ -19,7 +19,7 @@ async function chatHandler(req, res) {
   }
 
   try {
-    const result = await handleQuery(question.trim(), userId, conversationHistory || []);
+    const result = await handleQuery(question.trim(), userId, conversationHistory || [], { bypassCache: Boolean(bypassCache) });
     res.json(result);
   } catch (error) {
     logger.error({ error, userId, questionLength: question?.length || 0 }, 'Chat query failed');

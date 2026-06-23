@@ -195,36 +195,44 @@ router.delete('/documents/:id', async (req, res) => {
 
 // GET /api/admin/diagnostics — system health check: Pinecone + Cohere + test query
 router.get('/diagnostics', async (req, res) => {
-  const { getPineconeIndex } = require('../config/pinecone');
+  const {
+    ensurePineconeIndex,
+    getPineconeEnvStatus,
+    getLastPineconeInitError,
+  } = require('../config/pinecone');
   const { embedText } = require('../services/embedding.service');
 
   const report = {
     timestamp: new Date().toISOString(),
-    pinecone: { status: 'unknown', vectorCount: null, error: null },
+    pinecone: {
+      status: 'unknown',
+      vectorCount: null,
+      error: null,
+      env: getPineconeEnvStatus(),
+      lastInitError: getLastPineconeInitError(),
+    },
     cohere: { status: 'unknown', error: null },
     testQuery: null,
   };
 
   try {
-    const index = getPineconeIndex();
-    if (!index) {
-      report.pinecone.status = 'not_initialized';
-    } else {
-      const stats = await index.describeIndexStats();
-      report.pinecone.status = 'connected';
-      report.pinecone.vectorCount = stats.totalRecordCount ?? stats.totalVectorCount ?? 0;
-    }
+    const index = await ensurePineconeIndex();
+    const stats = await index.describeIndexStats();
+    report.pinecone.status = 'connected';
+    report.pinecone.vectorCount = stats.totalRecordCount ?? stats.totalVectorCount ?? 0;
+    report.pinecone.lastInitError = null;
   } catch (e) {
     report.pinecone.status = 'error';
     report.pinecone.error = e.message;
+    report.pinecone.lastInitError = getLastPineconeInitError();
   }
 
   try {
     const testVector = await embedText('What is supplier inclusion?', 'search_query');
     report.cohere.status = 'connected';
 
-    const index = getPineconeIndex();
-    if (index && report.pinecone.status === 'connected') {
+    if (report.pinecone.status === 'connected') {
+      const index = await ensurePineconeIndex();
       const result = await index.query({ vector: testVector, topK: 3, includeMetadata: true });
       report.testQuery = {
         question: 'What is supplier inclusion?',

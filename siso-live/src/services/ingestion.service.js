@@ -19,7 +19,7 @@ const path = require('path');
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
 const { embedBatch, chunkText } = require('./embedding.service');
-const { getPineconeIndex } = require('../config/pinecone');
+const { ensurePineconeIndex } = require('../config/pinecone');
 const { invalidateAnswerCache } = require('../config/redis');
 const { query } = require('../config/database');
 const { logger } = require('../utils/logger');
@@ -68,8 +68,10 @@ async function ingestDocument(filePath, documentId, filename, uploadedBy) {
     logger.info({ documentId }, 'Step 3 complete: embeddings generated');
 
     // Step 4: Store in Pinecone with metadata
-    const index = getPineconeIndex();
-    if (!index) {
+    let index = null;
+    try {
+      index = await ensurePineconeIndex();
+    } catch (error) {
       logger.warn({ documentId }, 'Pinecone unavailable — raw text saved, no vectors stored. Re-index from admin panel.');
       await query(`UPDATE documents SET status = 'active', chunk_count = $1, processed_at = NOW(), has_vectors = false WHERE id = $2`, [chunks.length, documentId]);
       return { success: true, chunkCount: chunks.length, processingTimeMs: Date.now() - startTime, vectorsStored: false };
@@ -236,8 +238,7 @@ async function reindexDocument(documentId) {
     const chunks = chunkText(doc.raw_text);
     const embeddings = await embedBatch(chunks, 'search_document');
 
-    const index = getPineconeIndex();
-    if (!index) throw new Error('Pinecone is not connected — check PINECONE_API_KEY in Vercel settings');
+    const index = await ensurePineconeIndex();
 
     // Delete old vectors for this document
     const oldCount = doc.chunk_count || 0;
