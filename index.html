@@ -857,6 +857,46 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
 .onboard-cta-meta { display: flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 11px; color: var(--text-3); }
 .onboard-cta-meta b { font-weight: 500; color: var(--text); }
 
+/* ---- Video modal overlay ---- */
+.video-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(11,19,32,0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+.video-modal-wrap {
+  position: relative;
+  width: min(900px, 92vw);
+  aspect-ratio: 16/9;
+}
+.video-modal-wrap iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 14px;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.55);
+}
+.video-modal-close {
+  position: absolute;
+  top: -44px;
+  right: 0;
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.video-modal-close:hover { background: rgba(255,255,255,0.22); }
+
 /* ============================================================
    CHAT
    ============================================================ */
@@ -2663,7 +2703,10 @@ function LoginScreen({ onLogin, signedOut, onDismissSignedOut }) {
 /* ============================================================
    ONBOARDING SCREEN
    ============================================================ */
+const VIMEO_URL = 'https://player.vimeo.com/video/1203654369?h=5636fcee24&autoplay=1&title=0&byline=0&portrait=0';
+
 function OnboardScreen({ user, onEnter }) {
+  const [videoOpen, setVideoOpen] = React.useState(false);
   return (
     <div className="onboard-screen">
       <div className="onboard-inner fade-up">
@@ -2689,7 +2732,7 @@ function OnboardScreen({ user, onEnter }) {
           </p>
         </div>
 
-        <div className="video-box" onClick={onEnter}>
+        <div className="video-box" onClick={() => setVideoOpen(true)}>
           <div className="video-thumb">
             <div className="video-duration">02:14</div>
             <div className="video-tag">
@@ -2710,6 +2753,22 @@ function OnboardScreen({ user, onEnter }) {
             <div className="video-skip" onClick={(e) => { e.stopPropagation(); onEnter(); }}>Skip for now →</div>
           </div>
         </div>
+
+        {videoOpen && (
+          <div className="video-modal-overlay" onClick={() => setVideoOpen(false)}>
+            <div className="video-modal-wrap" onClick={(e) => e.stopPropagation()}>
+              <div className="video-modal-close" onClick={() => setVideoOpen(false)}>
+                <div style={{ width: 14, height: 14 }}><Icons.close /></div>
+              </div>
+              <iframe
+                src={VIMEO_URL}
+                allow="autoplay; fullscreen; picture-in-picture"
+                allowFullScreen
+                title="SISO Live! Orientation"
+              />
+            </div>
+          </div>
+        )}
 
         <div className="onboard-cards">
           <div className="onboard-card">
@@ -2773,6 +2832,9 @@ function NavAccount({ user, onLogout }) {
             </div>
             <div className="nav-menu-item"><span className="nm-ic"><Icons.user /></span>Profile</div>
             <div className="nav-menu-item"><span className="nm-ic"><Icons.settings /></span>Account settings</div>
+            <div className="nav-menu-item" onClick={() => { setOpen(false); window.open('https://vimeo.com/1203654369/5636fcee24', '_blank'); }}>
+              <span className="nm-ic"><Icons.play /></span>Rewatch orientation
+            </div>
             <div className="nav-menu-sep" />
             <div className="nav-menu-item danger" onClick={() => { setOpen(false); setConfirm(true); }}>
               <span className="nm-ic"><Icons.logout /></span>Sign out
