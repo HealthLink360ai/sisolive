@@ -9,6 +9,7 @@ The experience is designed for controlled pilot use: learners get guided answers
 ## Current Demo URL
 
 - Frontend: https://sisolive.lspdedge.com
+- Fresh first-time flow: https://sisolive.lspdedge.com/?fresh=1
 - Backend health: https://sisolive.vercel.app/health
 
 Login credentials should be shared separately through an approved secure channel.
@@ -59,3 +60,11 @@ Remaining enterprise work includes:
 ## Recommended Demo Message
 
 "SISO Live helps AbbVie teams learn supplier inclusion and sustainability guidance faster by searching approved source materials and returning a concise, source-grounded answer. The tool also captures feedback and knowledge gaps, so the SISO team can continuously improve the underlying content through a controlled review process."
+
+## First-Time Demo Flow
+
+Use the fresh first-time flow link when presenting the experience to a new reviewer:
+
+https://sisolive.lspdedge.com/?fresh=1
+
+This resets local onboarding state in the browser before login, so the reviewer sees the orientation experience instead of landing directly in a previously used session. It can be used with the approved demo account; after orientation, admin users can still open the Admin dashboard from the learner experience.

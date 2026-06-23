@@ -50,6 +50,10 @@ Most recent validated production state:
 
 Fresh source-grounded answers may take several seconds, commonly around 5-10 seconds depending on model latency. For demo flow, use the approved question set first and allow the loading state to complete.
 
+## First-Time Flow
+
+Use https://sisolive.lspdedge.com/?fresh=1 for client walkthroughs. This clears local onboarding state for the browser before login, allowing the reviewer to see the first-time orientation flow.
+
 ## Notes
 
 Demo/admin users are exempt from learner query limits so client QA and demos are not blocked by normal daily usage controls.

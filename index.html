@@ -4427,8 +4427,25 @@ function AdminScreen({ user, onBack, onLogout, onRewatch }) {
    APP
    ============================================================ */
 function App() {
+  const forceFreshOnboarding = () => sessionStorage.getItem('siso_force_onboard_once') === '1';
+  const onboardKeyFor = (u) => `siso_onboard_done:${String(u?.email || u?.id || 'guest').toLowerCase()}`;
+  const shouldShowOnboarding = (u) => {
+    if (!u) return false;
+    if (forceFreshOnboarding()) return true;
+    if (u.firstLogin === true) return true;
+    return localStorage.getItem(onboardKeyFor(u)) !== '1';
+  };
+
   const [screen, setScreen] = useState(() => {
     try {
+      const freshDemo = new URLSearchParams(window.location.search).get('fresh') === '1';
+      if (freshDemo) {
+        Object.keys(localStorage)
+          .filter(k => k === 'siso_onboard_done' || k.startsWith('siso_onboard_done:'))
+          .forEach(k => localStorage.removeItem(k));
+        sessionStorage.setItem('siso_force_onboard_once', '1');
+        window.history.replaceState({}, '', window.location.pathname);
+      }
       const u = localStorage.getItem(USER_KEY);
       const tok = getToken();
       if (!u || !tok) {
@@ -4436,9 +4453,9 @@ function App() {
         return 'login';
       }
       const parsed = JSON.parse(u);
+      if (forceFreshOnboarding()) return 'onboard';
       if (parsed?.is_admin || parsed?.role === 'admin') return 'admin';
-      const seen = localStorage.getItem('siso_onboard_done');
-      return seen ? 'chat' : 'onboard';
+      return shouldShowOnboarding(parsed) ? 'onboard' : 'chat';
     } catch { return 'login'; }
   });
   const [user, setUser] = useState(() => {
@@ -4478,11 +4495,12 @@ function App() {
     localStorage.setItem(USER_KEY, JSON.stringify(u));
     setUser(u);
     setSignedOut(false);
-    if (u.is_admin || u.role === 'admin') {
+    if (forceFreshOnboarding()) {
+      setScreen('onboard');
+    } else if (u.is_admin || u.role === 'admin') {
       setScreen('admin');
     } else {
-      const seen = localStorage.getItem('siso_onboard_done');
-      setScreen(seen ? 'chat' : 'onboard');
+      setScreen(shouldShowOnboarding(u) ? 'onboard' : 'chat');
     }
   };
 
@@ -4501,7 +4519,11 @@ function App() {
         <LoginScreen onLogin={handleLogin} signedOut={signedOut} onDismissSignedOut={() => setSignedOut(false)} />
       </div>
       <div style={{ display: screen === 'onboard' ? 'contents' : 'none' }}>
-        <OnboardScreen user={user} onEnter={() => { localStorage.setItem('siso_onboard_done', '1'); setScreen('chat'); }} />
+        <OnboardScreen user={user} onEnter={() => {
+          localStorage.setItem(onboardKeyFor(user), '1');
+          sessionStorage.removeItem('siso_force_onboard_once');
+          setScreen('chat');
+        }} />
       </div>
       <div style={{ display: screen === 'chat' ? 'contents' : 'none' }}>
         <ChatScreen user={user}

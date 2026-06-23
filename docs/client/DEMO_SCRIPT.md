@@ -2,11 +2,13 @@
 
 ## 1. Open The Tool
 
-Open https://sisolive.lspdedge.com and sign in with the approved demo account.
+Open https://sisolive.lspdedge.com/?fresh=1 and sign in with the approved demo account.
 
 Suggested framing:
 
 "This is the controlled pilot version of SISO Live. The goal is to show how employees can learn from approved supplier inclusion and sustainability content, while admins can identify where the knowledge base needs improvement."
+
+The `?fresh=1` link resets local onboarding state in the browser so the reviewer sees the first-time orientation flow. It can be used with the approved demo account; after orientation, admin users can still open the Admin dashboard from the learner experience.
 
 ## 2. Learner Experience
 
