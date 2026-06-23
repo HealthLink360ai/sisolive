@@ -713,9 +713,28 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
   gap: 14px;
   margin-bottom: 36px;
   padding-top: 8px;
-  position: relative;
 }
+/* flip card outer wrapper */
+.onboard-step-wrapper {
+  perspective: 1200px;
+  cursor: pointer;
+  min-height: 280px;
+  border-radius: 18px;
+}
+.onboard-step-inner {
+  position: relative;
+  width: 100%;
+  min-height: 280px;
+  transition: transform 0.58s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+}
+.onboard-step-wrapper.flipped .onboard-step-inner {
+  transform: rotateY(180deg);
+}
+/* shared face styles */
 .onboard-step {
+  position: absolute;
+  inset: 0;
   padding: 30px 28px;
   background: var(--ink);
   border-radius: 18px;
@@ -723,40 +742,31 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
   box-shadow:
     0 1px 0 rgba(255,255,255,0.04) inset,
     0 16px 40px -12px rgba(11,19,32,0.40);
-  position: relative;
-  min-width: 0;
   display: flex;
   flex-direction: column;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease;
 }
-.onboard-step:hover {
-  transform: translateY(-3px);
+.onboard-step-wrapper:not(.flipped):hover .onboard-step-front,
+.onboard-step-wrapper.flipped:hover .onboard-step-back {
   box-shadow:
     0 1px 0 rgba(255,255,255,0.04) inset,
     0 24px 56px -16px rgba(11,19,32,0.55),
-    0 0 0 1px rgba(21,183,154,0.22);
+    0 0 0 1px rgba(21,183,154,0.28);
 }
-/* ambient teal glow top-right, like login card */
+.onboard-step-back { transform: rotateY(180deg); }
+/* ambient glow */
 .onboard-step::before {
   content: '';
   position: absolute;
   top: -60px; right: -60px;
   width: 180px; height: 180px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(21,183,154,0.12) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(21,183,154,0.13) 0%, transparent 70%);
   pointer-events: none;
   z-index: 0;
-}
-/* arrow connectors between cards */
-.onboard-step:not(:last-child)::after {
-  content: '→';
-  position: absolute;
-  right: -19px;
-  top: 28px;
-  font-size: 14px;
-  color: var(--teal);
-  z-index: 3;
-  line-height: 1;
 }
 .onboard-step-num {
   font-family: var(--mono);
@@ -792,8 +802,8 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
   font-weight: 500;
   letter-spacing: -0.025em;
   color: var(--text-on-ink);
-  margin-bottom: 14px;
   line-height: 1.25;
+  flex: 1;
   position: relative; z-index: 1;
 }
 .onboard-step-body {
@@ -803,9 +813,17 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
   flex: 1;
   position: relative; z-index: 1;
 }
+.onboard-step-hint {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  color: var(--teal);
+  opacity: 0.6;
+  margin-top: 18px;
+  position: relative; z-index: 1;
+}
 @media (max-width: 700px) {
   .onboard-steps { grid-template-columns: 1fr; gap: 20px; }
-  .onboard-step:not(:last-child)::after { content: none; }
 }
 .onboard-top {
   display: flex; justify-content: space-between; align-items: center;
@@ -2982,7 +3000,29 @@ function LoginScreen({ onLogin, signedOut, onDismissSignedOut }) {
 /* ============================================================
    ONBOARDING SCREEN
    ============================================================ */
-const VIMEO_EMBED = 'https://player.vimeo.com/video/1203654369?h=5636fcee24&title=0&byline=0&portrait=0';
+const VIMEO_EMBED = 'https://player.vimeo.com/video/1203654369?h=5636fcee24&title=0&byline=0&portrait=0&controls=0&transparent=0';
+
+function OnboardStepCard({ num, label, heading, body }) {
+  const [flipped, setFlipped] = React.useState(false);
+  return (
+    <div className={'onboard-step-wrapper' + (flipped ? ' flipped' : '')} onClick={() => setFlipped(f => !f)}>
+      <div className="onboard-step-inner">
+        <div className="onboard-step onboard-step-front">
+          <div className="onboard-step-num">{num}</div>
+          <div className="onboard-step-label">{label}</div>
+          <div className="onboard-step-heading">{heading}</div>
+          <div className="onboard-step-hint">Click to learn more →</div>
+        </div>
+        <div className="onboard-step onboard-step-back">
+          <div className="onboard-step-num">{num}</div>
+          <div className="onboard-step-label">{label}</div>
+          <p className="onboard-step-body">{body}</p>
+          <div className="onboard-step-hint">← Flip back</div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function OnboardScreen({ user, onEnter }) {
   return (
@@ -3003,7 +3043,7 @@ function OnboardScreen({ user, onEnter }) {
             <span className="step">Orientation</span>
             Before you begin
           </div>
-          <h1 className="onboard-h">Supplier inclusion and sustainability: <em>what it means at AbbVie.</em></h1>
+          <h1 className="onboard-h">Supplier inclusion and sustainability:<br /><em>What it means at AbbVie.</em></h1>
         </div>
 
         <div className="onboard-video-hero">
@@ -3022,40 +3062,24 @@ function OnboardScreen({ user, onEnter }) {
         </div>
 
         <div className="onboard-steps">
-          <div className="onboard-step">
-            <div className="onboard-step-num">STEP 01</div>
-            <div className="onboard-step-label">Supplier Inclusion</div>
-            <div className="onboard-step-heading">Expanding who AbbVie does business with</div>
-            <p className="onboard-step-body">
-              Supplier inclusion is AbbVie's commitment to actively partnering with businesses owned by
-              underrepresented groups, including minority, women, veteran, LGBTQ+, and disability-owned
-              enterprises. It's a strategic priority to broaden our supply chain, strengthen communities,
-              and bring diverse perspectives to how AbbVie operates.
-            </p>
-          </div>
-
-          <div className="onboard-step">
-            <div className="onboard-step-num">STEP 02</div>
-            <div className="onboard-step-label">Sustainability</div>
-            <div className="onboard-step-heading">Responsible sourcing beyond the bottom line</div>
-            <p className="onboard-step-body">
-              AbbVie's sustainability goals focus on environmental stewardship: reducing carbon
-              emissions, water usage, and waste, while measuring the social and governance impact of
-              our supply chain decisions. Together, supplier inclusion and sustainability form the
-              foundation of how AbbVie creates long-term value.
-            </p>
-          </div>
-
-          <div className="onboard-step">
-            <div className="onboard-step-num">STEP 03</div>
-            <div className="onboard-step-label">SISO Live!</div>
-            <div className="onboard-step-heading">Your precision learning coach</div>
-            <p className="onboard-step-body">
-              SISO Live! gives you instant, verified answers from AbbVie's official supplier inclusion
-              content. Ask in plain language, get grounded responses, and follow suggested questions to
-              build real understanding, not just information.
-            </p>
-          </div>
+          <OnboardStepCard
+            num="STEP 01"
+            label="Supplier Inclusion"
+            heading="Expanding who AbbVie does business with"
+            body="Supplier inclusion is AbbVie's commitment to actively partnering with businesses owned by underrepresented groups, including minority, women, veteran, LGBTQ+, and disability-owned enterprises. It's a strategic priority to broaden our supply chain, strengthen communities, and bring diverse perspectives to how AbbVie operates."
+          />
+          <OnboardStepCard
+            num="STEP 02"
+            label="Sustainability"
+            heading="Responsible sourcing beyond the bottom line"
+            body="AbbVie's sustainability goals focus on environmental stewardship: reducing carbon emissions, water usage, and waste, while measuring the social and governance impact of our supply chain decisions. Together, supplier inclusion and sustainability form the foundation of how AbbVie creates long-term value."
+          />
+          <OnboardStepCard
+            num="STEP 03"
+            label="SISO Live!"
+            heading="Your precision learning coach"
+            body="SISO Live! gives you instant, verified answers from AbbVie's official supplier inclusion content. Ask in plain language, get grounded responses, and follow suggested questions to build real understanding, not just information."
+          />
         </div>
 
         <div className="onboard-cta-row">
