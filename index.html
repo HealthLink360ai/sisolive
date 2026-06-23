@@ -690,12 +690,57 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
   background: var(--ink);
   box-shadow: 0 8px 32px rgba(11,19,32,0.18);
   margin-bottom: 12px;
+  position: relative;
 }
 .onboard-video-embed iframe {
   width: 100%;
   height: 100%;
   border: 0;
   display: block;
+}
+/* poster shown before the user clicks play */
+.video-poster {
+  position: absolute;
+  inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 18px;
+  cursor: pointer;
+  background: var(--ink);
+  overflow: hidden;
+}
+.video-poster-glow {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(circle at 28% 65%, rgba(21,183,154,0.14) 0%, transparent 50%),
+    radial-gradient(circle at 72% 28%, rgba(45,91,255,0.08) 0%, transparent 45%);
+  pointer-events: none;
+}
+.video-play-circle {
+  width: 76px; height: 76px; border-radius: 50%;
+  background: var(--teal);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ink);
+  box-shadow: 0 8px 36px rgba(21,183,154,0.45);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative; z-index: 1;
+  flex-shrink: 0;
+}
+.video-poster:hover .video-play-circle {
+  transform: scale(1.10);
+  box-shadow: 0 12px 48px rgba(21,183,154,0.62);
+}
+.video-play-meta {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  position: relative; z-index: 1;
+}
+.video-play-title {
+  font-size: 15px; font-weight: 500; letter-spacing: -0.01em;
+  color: var(--text-on-ink);
+}
+.video-play-sub {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
+  color: var(--text-on-ink-3);
 }
 .onboard-video-caption {
   font-family: var(--mono);
@@ -3000,7 +3045,34 @@ function LoginScreen({ onLogin, signedOut, onDismissSignedOut }) {
 /* ============================================================
    ONBOARDING SCREEN
    ============================================================ */
-const VIMEO_EMBED = 'https://player.vimeo.com/video/1203654369?h=5636fcee24&title=0&byline=0&portrait=0&controls=0&transparent=0';
+const VIMEO_BASE = 'https://player.vimeo.com/video/1203654369?h=5636fcee24&title=0&byline=0&portrait=0';
+
+function VideoPlayer({ src }) {
+  const [active, setActive] = React.useState(false);
+  return (
+    <div className="onboard-video-embed">
+      {active ? (
+        <iframe
+          src={src + '&autoplay=1'}
+          allow="autoplay; fullscreen; picture-in-picture"
+          allowFullScreen
+          title="SISO Live! Supplier Inclusion and Sustainability Overview"
+        />
+      ) : (
+        <div className="video-poster" onClick={() => setActive(true)}>
+          <div className="video-poster-glow" />
+          <div className="video-play-circle">
+            <div style={{ width: 24, height: 24, marginLeft: 4 }}><Icons.play /></div>
+          </div>
+          <div className="video-play-meta">
+            <div className="video-play-title">AbbVie SISO Office · Orientation</div>
+            <div className="video-play-sub">2 MIN · CLICK TO WATCH</div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function OnboardStepCard({ num, label, heading, body }) {
   const [flipped, setFlipped] = React.useState(false);
@@ -3047,14 +3119,7 @@ function OnboardScreen({ user, onEnter }) {
         </div>
 
         <div className="onboard-video-hero">
-          <div className="onboard-video-embed">
-            <iframe
-              src={VIMEO_EMBED}
-              allow="autoplay; fullscreen; picture-in-picture"
-              allowFullScreen
-              title="SISO Live! Supplier Inclusion and Sustainability Overview"
-            />
-          </div>
+          <VideoPlayer src={VIMEO_BASE} />
           <div className="onboard-video-caption">
             <div style={{ width: 9, height: 9 }}><Icons.spark /></div>
             2 min · AbbVie SISO Office · Watch before getting started
