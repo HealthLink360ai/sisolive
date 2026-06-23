@@ -1168,14 +1168,52 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
   box-shadow: var(--shadow-card);
 }
 .ai-card-body {
-  padding: 18px 20px 16px;
+  padding: 20px 22px 18px;
   font-size: 14.5px;
-  line-height: 1.65;
+  line-height: 1.7;
   color: var(--text);
   letter-spacing: -0.005em;
 }
-.ai-card-body.low-conf { color: var(--text-2); }
+.ai-card-body.parsed { display: flex; flex-direction: column; gap: 13px; padding: 20px 22px 18px; }
+.ai-card-body.low-conf { color: var(--text-2); font-size: 14.5px; line-height: 1.7; }
 .ai-card-body strong { font-weight: 600; }
+.answer-p { font-size: 14.5px; line-height: 1.7; color: var(--text); letter-spacing: -0.005em; margin: 0; }
+.answer-p + .answer-p { margin-top: 2px; }
+.answer-example {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text);
+  padding: 11px 14px 11px 15px;
+  background: rgba(21,183,154,0.06);
+  border-left: 2.5px solid var(--teal);
+  border-radius: 0 8px 8px 0;
+  letter-spacing: -0.005em;
+}
+.answer-example strong { font-weight: 600; }
+.answer-takeaway {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 12px 15px;
+  background: linear-gradient(135deg, rgba(21,183,154,0.08) 0%, rgba(21,183,154,0.04) 100%);
+  border-radius: 10px;
+  border: 1px solid rgba(21,183,154,0.20);
+}
+.answer-takeaway-label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--teal-deep);
+}
+.answer-takeaway-text {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--ink);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
 .ai-card-foot {
   border-top: 1px solid var(--rule);
   padding: 10px 14px 10px 20px;
@@ -2568,6 +2606,73 @@ const AdminAPI = {
 
 const { useState, useRef, useEffect } = React;
 
+// ---- Answer text parsing ----
+function cleanSourceName(raw) {
+  if (!raw) return null;
+  return raw
+    .replace(/\.(pdf|docx|doc|txt|csv|pptx|xlsx)$/i, '')
+    .replace(/[_-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function parseAnswer(text) {
+  if (!text) return { paragraphs: [], takeaway: null, sourceInText: null };
+
+  // Extract inline Source: line that Claude writes at the end
+  const sourceRx = /(?:^|\n)Source:\s*(.+?)(?:\n|$)/i;
+  const sourceMatch = text.match(sourceRx);
+  const sourceInText = sourceMatch ? sourceMatch[1].trim() : null;
+  let body = sourceMatch ? text.replace(sourceMatch[0], '').trim() : text;
+
+  // Split "The bottom line:" off — it always appears as its own sentence
+  const bottomRx = /(?:^|\n)(The bottom line:\s*.+?)(?:\n|$)/i;
+  const bottomMatch = body.match(bottomRx);
+  let takeaway = null;
+  if (bottomMatch) {
+    takeaway = bottomMatch[1].replace(/^the bottom line:\s*/i, '').trim();
+    body = body.replace(bottomMatch[0], '').trim();
+  }
+
+  // Split remaining text into paragraphs (single or double newlines)
+  const rawParagraphs = body.split(/\n+/).map(p => p.trim()).filter(Boolean);
+
+  // Tag paragraphs: detect example/illustration markers
+  const exampleRx = /^(Think of it this way:|Here['']?s a practical example:|Building on what we covered)/i;
+  const paragraphs = rawParagraphs.map(p => ({
+    text: p,
+    isExample: exampleRx.test(p),
+  }));
+
+  return { paragraphs, takeaway, sourceInText };
+}
+
+function AnswerBody({ text }) {
+  const { paragraphs, takeaway, sourceInText } = parseAnswer(text);
+
+  // Fallback: render plain if nothing was parsed
+  if (!paragraphs.length && !takeaway) {
+    return <div className="ai-card-body">{text}</div>;
+  }
+
+  return (
+    <div className="ai-card-body parsed">
+      {paragraphs.map((p, i) =>
+        p.isExample
+          ? <div key={i} className="answer-example">{p.text}</div>
+          : <p key={i} className="answer-p">{p.text}</p>
+      )}
+      {takeaway && (
+        <div className="answer-takeaway">
+          <span className="answer-takeaway-label">The bottom line</span>
+          <span className="answer-takeaway-text">{takeaway}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+// ---- end answer parsing ----
+
 /* ============================================================
    ICONS — defined before all components
    ============================================================ */
@@ -2978,12 +3083,16 @@ function ChatScreen({ user, onAdmin, onLogout, onRewatch }) {
           ? Math.round(result.confidence * 100)
           : (answer ? 95 : 60);
       const escalated = result.shouldEscalate === true;
+      // Extract source: try parsed text first, then top API source
+      const { sourceInText } = parseAnswer((!escalated && conf >= 45) ? answer : null);
+      const apiSource = result.sources?.[0]?.filename || null;
       setMessages((m) => [...m, {
         id: Date.now() + 1, role: 'ai',
         text: (!escalated && conf >= 45) ? answer : null,
-        conf, escalated, source: result.source || null, nudge: result.nudge || null,
+        conf, escalated,
+        source: sourceInText || apiSource || null,
+        nudge: result.nudge || null,
         feedback: null, showComment: false, comment: '',
-        chars: answer ? answer.length : null
       }]);
     } catch (e) {
       setTyping(false);
@@ -3133,35 +3242,36 @@ function ChatScreen({ user, onAdmin, onLogout, onRewatch }) {
                       <span className="msg-ai-time">{nowStr()}</span>
                     </div>
 
-                    {msg.conf === null && (
+                    {msg.conf === null && msg.text && (
                       <div className="ai-card">
-                        <div className="ai-card-body">{msg.text}</div>
+                        <div className="ai-card-body" style={{ fontSize: 15, lineHeight: 1.7 }}>{msg.text}</div>
                       </div>
                     )}
 
-                    {msg.conf !== null && !msg.escalated && msg.conf >= 45 && (
-                      <div className="ai-card">
-                        <div className="ai-card-body">{msg.text}</div>
-                        <div className="ai-card-foot">
-                          <div className="conf-gauge">
-                            <ConfidenceArc value={msg.conf} />
-                            <div className="conf-text">Confidence <b>{msg.conf}%</b></div>
-                          </div>
-                          {msg.source && (
-                            <div className="source-chip" title={msg.source}>
-                              <span className="doc-mark"><Icons.files /></span>
-                              {msg.source.replace('.pdf', '').replace(/_/g, ' ')}
-                              <span className="ext">.pdf</span>
+                    {msg.conf !== null && !msg.escalated && msg.conf >= 45 && (() => {
+                      const { sourceInText } = parseAnswer(msg.text);
+                      const displaySource = cleanSourceName(sourceInText || msg.source);
+                      return (
+                        <div className="ai-card">
+                          <AnswerBody text={msg.text} />
+                          <div className="ai-card-foot">
+                            <div className="conf-gauge">
+                              <ConfidenceArc value={msg.conf} />
+                              <div className="conf-text">Confidence <b>{msg.conf}%</b></div>
                             </div>
-                          )}
-                          <div className="msg-foot-meta">
-                            <span className="foot-meta-pill">{msg.chars} chars</span>
-                            <span className="foot-meta-sep">·</span>
-                            <span className="foot-meta-pill">RAG retrieval</span>
+                            {displaySource && (
+                              <div className="source-chip" title={displaySource}>
+                                <span className="doc-mark"><Icons.files /></span>
+                                {displaySource}
+                              </div>
+                            )}
+                            <div className="msg-foot-meta">
+                              <span className="foot-meta-pill">RAG retrieval</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     {msg.conf !== null && (msg.escalated || msg.conf < 45) && (
                       <div className="ai-card">
