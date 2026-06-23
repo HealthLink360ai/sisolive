@@ -690,57 +690,12 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
   background: var(--ink);
   box-shadow: 0 8px 32px rgba(11,19,32,0.18);
   margin-bottom: 12px;
-  position: relative;
 }
 .onboard-video-embed iframe {
   width: 100%;
   height: 100%;
   border: 0;
   display: block;
-}
-/* poster shown before the user clicks play */
-.video-poster {
-  position: absolute;
-  inset: 0;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 18px;
-  cursor: pointer;
-  background: var(--ink);
-  overflow: hidden;
-}
-.video-poster-glow {
-  position: absolute; inset: 0;
-  background:
-    radial-gradient(circle at 28% 65%, rgba(21,183,154,0.14) 0%, transparent 50%),
-    radial-gradient(circle at 72% 28%, rgba(45,91,255,0.08) 0%, transparent 45%);
-  pointer-events: none;
-}
-.video-play-circle {
-  width: 76px; height: 76px; border-radius: 50%;
-  background: var(--teal);
-  display: flex; align-items: center; justify-content: center;
-  color: var(--ink);
-  box-shadow: 0 8px 36px rgba(21,183,154,0.45);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  position: relative; z-index: 1;
-  flex-shrink: 0;
-}
-.video-poster:hover .video-play-circle {
-  transform: scale(1.10);
-  box-shadow: 0 12px 48px rgba(21,183,154,0.62);
-}
-.video-play-meta {
-  display: flex; flex-direction: column; align-items: center; gap: 4px;
-  position: relative; z-index: 1;
-}
-.video-play-title {
-  font-size: 15px; font-weight: 500; letter-spacing: -0.01em;
-  color: var(--text-on-ink);
-}
-.video-play-sub {
-  font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
-  color: var(--text-on-ink-3);
 }
 .onboard-video-caption {
   font-family: var(--mono);
@@ -3045,34 +3000,7 @@ function LoginScreen({ onLogin, signedOut, onDismissSignedOut }) {
 /* ============================================================
    ONBOARDING SCREEN
    ============================================================ */
-const VIMEO_BASE = 'https://player.vimeo.com/video/1203654369?h=5636fcee24&title=0&byline=0&portrait=0';
-
-function VideoPlayer({ src }) {
-  const [active, setActive] = React.useState(false);
-  return (
-    <div className="onboard-video-embed">
-      {active ? (
-        <iframe
-          src={src + '&autoplay=1'}
-          allow="autoplay; fullscreen; picture-in-picture"
-          allowFullScreen
-          title="SISO Live! Supplier Inclusion and Sustainability Overview"
-        />
-      ) : (
-        <div className="video-poster" onClick={() => setActive(true)}>
-          <div className="video-poster-glow" />
-          <div className="video-play-circle">
-            <div style={{ width: 24, height: 24, marginLeft: 4 }}><Icons.play /></div>
-          </div>
-          <div className="video-play-meta">
-            <div className="video-play-title">AbbVie SISO Office · Orientation</div>
-            <div className="video-play-sub">2 MIN · CLICK TO WATCH</div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+const VIMEO_EMBED = 'https://player.vimeo.com/video/1203654369?h=5636fcee24&title=0&byline=0&portrait=0';
 
 function OnboardStepCard({ num, label, heading, body }) {
   const [flipped, setFlipped] = React.useState(false);
@@ -3119,7 +3047,14 @@ function OnboardScreen({ user, onEnter }) {
         </div>
 
         <div className="onboard-video-hero">
-          <VideoPlayer src={VIMEO_BASE} />
+          <div className="onboard-video-embed">
+            <iframe
+              src={VIMEO_EMBED}
+              allow="autoplay; fullscreen; picture-in-picture"
+              allowFullScreen
+              title="SISO Live! Supplier Inclusion and Sustainability Overview"
+            />
+          </div>
           <div className="onboard-video-caption">
             <div style={{ width: 9, height: 9 }}><Icons.spark /></div>
             2 min · AbbVie SISO Office · Watch before getting started
@@ -3167,6 +3102,8 @@ function OnboardScreen({ user, onEnter }) {
 function NavAccount({ user, onLogout, onRewatch }) {
   const [open, setOpen] = useState(false);
   const [confirm, setConfirm] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const initials = user ? (user.initials || (user.name || '').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '?') : '?';
   return (
     <div className="nav-account">
@@ -3186,8 +3123,12 @@ function NavAccount({ user, onLogout, onRewatch }) {
                 <div className="nav-menu-mail">{user ? (user.email || '') : ''}</div>
               </div>
             </div>
-            <div className="nav-menu-item"><span className="nm-ic"><Icons.user /></span>Profile</div>
-            <div className="nav-menu-item"><span className="nm-ic"><Icons.settings /></span>Account settings</div>
+            <div className="nav-menu-item" onClick={() => { setOpen(false); setShowProfile(true); }}>
+              <span className="nm-ic"><Icons.user /></span>Profile
+            </div>
+            <div className="nav-menu-item" onClick={() => { setOpen(false); setShowSettings(true); }}>
+              <span className="nm-ic"><Icons.settings /></span>Account settings
+            </div>
             <div className="nav-menu-item" onClick={() => { setOpen(false); onRewatch && onRewatch(); }}>
               <span className="nm-ic"><Icons.play /></span>Rewatch orientation
             </div>
@@ -3209,6 +3150,31 @@ function NavAccount({ user, onLogout, onRewatch }) {
               <button className="logout-btn solid" onClick={() => { setConfirm(false); onLogout && onLogout(); }}>
                 <span style={{ width: 14, height: 14 }}><Icons.logout /></span>Sign out
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showProfile && (
+        <div className="logout-overlay" onClick={() => setShowProfile(false)}>
+          <div className="logout-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="ld-ic" style={{ fontSize: 18, fontWeight: 700, fontFamily: 'var(--mono)' }}>{initials}</div>
+            <h3>{user?.name || 'User'}</h3>
+            <p style={{ marginBottom: 4 }}>{user?.email || '—'}</p>
+            {user?.role && <p style={{ fontSize: 12, color: 'var(--text-3)', textTransform: 'capitalize', marginBottom: 0 }}>{user.role}{user.department ? ` · ${user.department}` : ''}</p>}
+            <div className="logout-actions" style={{ marginTop: 24 }}>
+              <button className="logout-btn ghost" onClick={() => setShowProfile(false)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showSettings && (
+        <div className="logout-overlay" onClick={() => setShowSettings(false)}>
+          <div className="logout-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="ld-ic"><Icons.settings /></div>
+            <h3>Account settings</h3>
+            <p>Full account management will be available when AbbVie SSO is enabled in the production release.</p>
+            <div className="logout-actions" style={{ marginTop: 24 }}>
+              <button className="logout-btn ghost" onClick={() => setShowSettings(false)}>Got it</button>
             </div>
           </div>
         </div>
