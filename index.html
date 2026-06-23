@@ -3302,7 +3302,7 @@ function ChatScreen({ user, onAdmin, onLogout, onRewatch }) {
         <div className="nav-right">
           <div className="nav-status">
             <div className="nav-status-dot" />
-            All systems normal
+            Live environment
           </div>
           <NavAccount user={user} onLogout={onLogout} onRewatch={onRewatch} />
         </div>
@@ -3412,7 +3412,7 @@ function ChatScreen({ user, onAdmin, onLogout, onRewatch }) {
                               </div>
                             )}
                             <div className="msg-foot-meta">
-                              <span className="foot-meta-pill">RAG retrieval</span>
+                              <span className="foot-meta-pill">Verified source match</span>
                             </div>
                           </div>
                         </div>
@@ -3579,7 +3579,7 @@ function ChatScreen({ user, onAdmin, onLogout, onRewatch }) {
               {typing ? 'Searching verified sources…' : 'Idle · ready to help'}
             </div>
             <p className="assistant-caption">
-              Your <em>SISO Live!</em> companion comes alive while it retrieves and verifies answers from AbbVie sources.
+              SISO Live searches AbbVie sources and shows the best verified answer it can support.
             </p>
           </div>
         </aside>
@@ -3665,7 +3665,7 @@ function AdminDashboard() {
           <div className={`metric-val ${avgConf !== '—' && avgConf >= 70 ? 'green' : avgConf !== '—' ? 'amber' : ''}`}>
             {avgConf !== '—' ? <>{avgConf}<span className="pct">%</span></> : '—'}
           </div>
-          <div className="metric-foot"><span>avg retrieval score</span></div>
+          <div className="metric-foot"><span>source match quality</span></div>
         </div>
         <div className="metric">
           <div className="metric-head">
@@ -3675,7 +3675,7 @@ function AdminDashboard() {
           <div className="metric-val amber">
             {escalationRate !== '—' ? <>{escalationRate}<span className="pct">%</span></> : '—'}
           </div>
-          <div className="metric-foot"><span>auto-routed</span></div>
+          <div className="metric-foot"><span>sent to support</span></div>
         </div>
       </div>
 
@@ -3939,14 +3939,14 @@ function SystemHealthPanel() {
   return (
     <div className="panel" style={{ marginBottom: 20 }}>
       <div className="panel-head">
-        <div className="panel-title"><span className="panel-title-ic"><Icons.shield /></span>System <em>health</em></div>
+        <div className="panel-title"><span className="panel-title-ic"><Icons.shield /></span>Search <em>health</em></div>
         <button className="export-btn" onClick={run} disabled={running} style={{ opacity: running ? 0.6 : 1 }}>
-          {running ? 'Running…' : 'Run diagnostic'}
+          {running ? 'Checking...' : 'Check search health'}
         </button>
       </div>
       {!health && !running && (
         <div style={{ padding: '20px 24px', fontSize: 13, color: 'var(--text-3)' }}>
-          Click "Run diagnostic" to verify all AI services are working and documents are searchable.
+          Checks the source index, language model, and a live supplier inclusion source lookup.
         </div>
       )}
       {running && (
@@ -4374,7 +4374,7 @@ function AdminScreen({ user, onBack, onLogout, onRewatch }) {
         <div className="nav-right">
           <div className="nav-status">
             <div className="nav-status-dot" />
-            All systems normal
+            Live environment
           </div>
           <NavAccount user={user} onLogout={onLogout} onRewatch={onRewatch} />
         </div>
@@ -4398,12 +4398,6 @@ function AdminScreen({ user, onBack, onLogout, onRewatch }) {
             </React.Fragment>
           ))}
 
-          <div className="admin-footer">
-            <div className="admin-item">
-              <span className="ai-ic"><Icons.settings /></span>
-              Settings
-            </div>
-          </div>
         </div>
 
         <div className="admin-main">
