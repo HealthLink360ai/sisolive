@@ -17,6 +17,7 @@
 const fs = require('fs');
 const path = require('path');
 const pdfParse = require('pdf-parse');
+const mammoth = require('mammoth');
 const { embedBatch, chunkText } = require('./embedding.service');
 const { getPineconeIndex } = require('../config/pinecone');
 const { invalidateAnswerCache } = require('../config/redis');
@@ -38,6 +39,8 @@ async function ingestDocument(filePath, documentId, filename, uploadedBy) {
 
     if (fileType === 'pdf') {
       rawText = await extractPdfText(filePath);
+    } else if (fileType === 'docx' || fileType === 'doc') {
+      rawText = await extractDocxText(filePath);
     } else if (fileType === 'csv') {
       rawText = await extractCsvText(filePath);
     } else if (fileType === 'txt') {
@@ -188,6 +191,16 @@ async function extractPdfTextWithClaude(dataBuffer, filePath) {
     throw new Error('Could not extract any text from this PDF. The file may be password-protected or corrupted.');
   }
   logger.info({ chars: text.length }, 'PDF text extracted via Claude AI');
+  return text;
+}
+
+async function extractDocxText(filePath) {
+  const result = await mammoth.extractRawText({ path: filePath });
+  const text = result.value || '';
+  if (!text.trim()) {
+    throw new Error('No text could be extracted from this Word document. It may be empty or corrupted.');
+  }
+  logger.info({ filePath, chars: text.length }, 'DOCX text extracted via mammoth');
   return text;
 }
 

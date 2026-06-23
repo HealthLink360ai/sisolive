@@ -284,7 +284,7 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
   display: flex; align-items: center; gap: 14px;
 }
 .login-lockup .org-mark {
-  height: 22px;
+  height: 32px;
   display: flex; align-items: center;
   padding-right: 4px;
 }
@@ -472,7 +472,7 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-9px); }
 }
-@media (max-width: 640px) {
+@media (max-width: 1100px) {
   .login-bot { display: none; }
 }
 
@@ -2443,6 +2443,11 @@ const USER_KEY  = 'siso_user';
 
 function getToken() { return localStorage.getItem(TOKEN_KEY); }
 
+// Global 401 handler — set by App on mount, called by any API that gets Unauthorized
+let _onUnauthorized = null;
+function setOnUnauthorized(fn) { _onUnauthorized = fn; }
+function dispatchUnauthorized() { if (_onUnauthorized) _onUnauthorized(); }
+
 const AuthAPI = {
   async login(email, password) {
     const r = await fetch(`${API_BASE}/api/auth/login`, {
@@ -2453,6 +2458,13 @@ const AuthAPI = {
     const d = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(d.error || 'Login failed');
     return d;
+  },
+  async validate() {
+    const r = await fetch(`${API_BASE}/api/auth/validate`, {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+    if (!r.ok) throw new Error('Session invalid');
+    return r.json();
   }
 };
 
@@ -2463,6 +2475,7 @@ const ChatAPI = {
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
       body: JSON.stringify({ question, conversationHistory: conversationHistory || [] })
     });
+    if (r.status === 401) { dispatchUnauthorized(); throw new Error('Session expired. Please sign in again.'); }
     const d = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(d.error || 'Query failed');
     return d;
@@ -2473,6 +2486,7 @@ const ChatAPI = {
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
       body: JSON.stringify({ messageId, type, comment })
     });
+    if (r.status === 401) { dispatchUnauthorized(); return; }
     if (!r.ok) throw new Error('Feedback failed');
     return r.json();
   }
@@ -3537,7 +3551,7 @@ function AdminUpload() {
           <span className="panel-tag">CHUNKED &amp; EMBEDDED ON UPLOAD</span>
         </div>
         <div className="panel-body" style={{ padding: '16px 20px 20px', overflow: 'visible' }}>
-          <input ref={fileInputRef} type="file" multiple accept=".pdf,.docx,.txt,.pptx,.csv,.xlsx,.mp4,.mov,.wav"
+          <input ref={fileInputRef} type="file" multiple accept=".pdf,.docx,.doc,.csv,.txt"
             style={{ display: 'none' }} onChange={(e) => handleFiles(e.target.files)} />
           <div
             className="upload-zone"
@@ -3550,7 +3564,7 @@ function AdminUpload() {
             <div className="up-h">Drop files to ingest</div>
             <div className="up-p">Files are automatically chunked and embedded into the RAG index. PDFs are OCR'd, videos transcribed.</div>
             <div className="file-pills">
-              {['PDF', 'DOCX', 'XLSX', 'CSV', 'TXT', 'MP4', 'MOV', 'WAV'].map((t) => (
+              {['PDF', 'DOCX', 'CSV', 'TXT'].map((t) => (
                 <span key={t} className="file-pill">{t}</span>
               ))}
             </div>
@@ -4131,6 +4145,26 @@ function App() {
     } catch { return null; }
   });
   const [signedOut, setSignedOut] = useState(false);
+
+  // Register the global 401 handler and validate stored session on load
+  useEffect(() => {
+    setOnUnauthorized(() => {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+      setUser(null);
+      setScreen('login');
+      setSignedOut(false);
+    });
+    // Validate stored token — if expired or invalid, clear session now
+    if (getToken()) {
+      AuthAPI.validate().catch(() => {
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
+        setUser(null);
+        setScreen('login');
+      });
+    }
+  }, []);
 
   const handleLogin = (data) => {
     const u = data.user || data;

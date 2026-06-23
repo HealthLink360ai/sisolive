@@ -9,7 +9,13 @@ const { query } = require('../config/database');
 const { logger } = require('../utils/logger');
 const router = express.Router();
 
-const ALLOWED_TYPES = ['application/pdf', 'text/csv', 'text/plain'];
+const ALLOWED_TYPES = [
+  'application/pdf',
+  'text/csv',
+  'text/plain',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+  'application/msword', // .doc (older Word)
+];
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const UPLOAD_DIR = '/tmp/siso-uploads';
 const INGESTION_TIMEOUT_MS = 55000; // Allow up to 55s for AI-based PDF extraction on large files
@@ -29,7 +35,7 @@ const upload = multer({
     if (ALLOWED_TYPES.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error(`File type not supported. Allowed: PDF, CSV, TXT`));
+      cb(new Error(`File type not supported. Allowed: PDF, DOCX, CSV, TXT`));
     }
   },
 });

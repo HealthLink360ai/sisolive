@@ -48,4 +48,10 @@ router.post('/logout', (req, res) => {
   res.json({ message: 'Logged out successfully' });
 });
 
+// GET /api/auth/validate — lightweight token check, used by frontend on load
+const { authenticateToken } = require('../middleware/auth');
+router.get('/validate', authenticateToken, (req, res) => {
+  res.json({ valid: true, user: req.user });
+});
+
 module.exports = router;
