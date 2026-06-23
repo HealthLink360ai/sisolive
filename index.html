@@ -3714,8 +3714,21 @@ function AdminDashboard() {
           </div>
           <div className="panel-body">
             {uniqueKnowledgeGaps.length === 0 ? (
-              <div style={{ padding: '24px 12px', color: 'var(--text-3)', fontSize: 13, textAlign: 'center' }}>
-                No unresolved gaps found in the last 30 days.
+              <div style={{ padding: '28px 20px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, textAlign: 'center' }}>
+                <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(21,183,154,0.10)', border: '1px solid rgba(21,183,154,0.20)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--teal)' }}>
+                  <div style={{ width: 20, height: 20 }}><Icons.check /></div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', marginBottom: 6, letterSpacing: '-0.01em' }}>No gaps detected this month</div>
+                  <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6, maxWidth: 320 }}>
+                    This panel surfaces questions learners asked that SISO Live! couldn't answer confidently — either escalated to support or answered below 25% confidence. When those appear, they'll show up here ranked by frequency so you know exactly what content to add next.
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', paddingTop: 4 }}>
+                  {['Escalated questions', 'Low-confidence answers', 'Content to upload next'].map(label => (
+                    <span key={label} style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.08em', padding: '4px 10px', borderRadius: 999, background: 'var(--paper-3)', border: '1px solid var(--rule)', color: 'var(--text-3)' }}>{label}</span>
+                  ))}
+                </div>
               </div>
             ) : uniqueKnowledgeGaps.map(([t, c]) => (
               <div key={t} className="gap-row">
