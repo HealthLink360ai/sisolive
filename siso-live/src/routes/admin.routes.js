@@ -21,6 +21,8 @@ async function dashboardHandler(req, res) {
         SELECT question, COUNT(*) AS count
         FROM queries
         WHERE created_at > NOW() - INTERVAL '30 days'
+          AND was_escalated = false
+          AND answer IS NOT NULL
         GROUP BY question
         ORDER BY count DESC
         LIMIT 10
@@ -28,7 +30,8 @@ async function dashboardHandler(req, res) {
       query(`
         SELECT question, COUNT(*) AS count
         FROM queries
-        WHERE was_escalated = true AND created_at > NOW() - INTERVAL '30 days'
+        WHERE created_at > NOW() - INTERVAL '30 days'
+          AND (was_escalated = true OR confidence_score < 0.25)
         GROUP BY question
         ORDER BY count DESC
         LIMIT 10
@@ -56,6 +59,10 @@ async function dashboardHandler(req, res) {
       avgConfidence: avgConfResult.rows[0]?.avg_conf ?? null,
       topQueries,
       knowledgeGaps,
+      insightLabels: {
+        topQueries: 'Answered demand',
+        knowledgeGaps: 'Needs review',
+      },
     });
   } catch (error) {
     logger.error({ error }, 'Dashboard query failed');
