@@ -4454,7 +4454,6 @@ function App() {
       }
       const parsed = JSON.parse(u);
       if (forceFreshOnboarding()) return 'onboard';
-      if (parsed?.is_admin || parsed?.role === 'admin') return 'admin';
       return shouldShowOnboarding(parsed) ? 'onboard' : 'chat';
     } catch { return 'login'; }
   });
@@ -4495,13 +4494,7 @@ function App() {
     localStorage.setItem(USER_KEY, JSON.stringify(u));
     setUser(u);
     setSignedOut(false);
-    if (forceFreshOnboarding()) {
-      setScreen('onboard');
-    } else if (u.is_admin || u.role === 'admin') {
-      setScreen('admin');
-    } else {
-      setScreen(shouldShowOnboarding(u) ? 'onboard' : 'chat');
-    }
+    setScreen(shouldShowOnboarding(u) ? 'onboard' : 'chat');
   };
 
   const handleLogout = () => {
