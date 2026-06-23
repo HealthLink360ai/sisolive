@@ -19,6 +19,7 @@ const { query } = require('../config/database');
 const { logger } = require('../utils/logger');
 const crypto = require('crypto');
 
+const ANSWER_CACHE_VERSION = 'learner-language-v2';
 
 /**
  * Main entry point — handles a user question end to end
@@ -30,7 +31,7 @@ async function handleQuery(question, userId, conversationHistory = [], options =
   // Step 1: Check cache first unless QA/admin explicitly asks for a fresh retrieval path.
   const questionHash = crypto
     .createHash('md5')
-    .update(question.toLowerCase().trim())
+    .update(`${ANSWER_CACHE_VERSION}:${question.toLowerCase().trim()}`)
     .digest('hex');
 
   if (!bypassCache) {

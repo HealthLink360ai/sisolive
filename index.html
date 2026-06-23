@@ -3711,7 +3711,7 @@ function AdminUpload() {
             onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}>
             <div className="up-ic"><div style={{ width: 22, height: 22 }}><Icons.upload /></div></div>
             <div className="up-h">Drop files to ingest</div>
-            <div className="up-p">PDF, DOCX, CSV, and TXT files are chunked and embedded into the RAG index after upload.</div>
+            <div className="up-p">PDF, DOCX, CSV, and TXT files are processed into searchable source sections after upload.</div>
             <div className="file-pills">
               {['PDF', 'DOCX', 'CSV', 'TXT'].map((t) => (
                 <span key={t} className="file-pill">{t}</span>
@@ -3754,7 +3754,7 @@ function AdminUpload() {
           {[
             ['Use descriptive filenames', 'They become part of source attribution.'],
             ['Prefer text-native PDFs', 'OCR works on scans but adds latency.'],
-            ['Add a one-page summary', 'Improves retrieval for broad questions.'],
+            ['Add a one-page summary', 'Improves search quality for broad questions.'],
             ['Mark drafts clearly', 'Use "Draft" in the filename to gate confidence.']
           ].map(([t, d]) => (
             <div key={t} className="tip-row">
@@ -3828,7 +3828,7 @@ function SystemHealthPanel() {
                 <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>
                   {vectorCount === 0
                     ? <span style={{ color: 'var(--signal)' }}>No documents are searchable yet</span>
-                    : <span style={{ color: 'var(--teal)' }}>{vectorCount} document sections indexed</span>
+                    : <span style={{ color: 'var(--teal)' }}>{vectorCount} source sections indexed</span>
                   }
                 </div>
               )}
@@ -3853,7 +3853,7 @@ function SystemHealthPanel() {
           </div>
           {matches.length > 0 && (
             <div>
-              <div style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--text-3)', marginBottom: 8 }}>LIVE TEST: "What is supplier inclusion?" — DOCUMENT SECTIONS FOUND</div>
+              <div style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--text-3)', marginBottom: 8 }}>LIVE TEST: "What is supplier inclusion?" - SOURCE SECTIONS FOUND</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {matches.map((m, i) => (
                   <div key={i} style={{ background: 'var(--bg-2)', borderRadius: 8, padding: '10px 12px', fontSize: 12 }}>
@@ -3886,7 +3886,8 @@ function SystemHealthPanel() {
 function AdminDocs() {
   const [docs, setDocs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('All topics');
+  const [filter, setFilter] = useState('All documents');
+  const [searchTerm, setSearchTerm] = useState('');
   const [reindexing, setReindexing] = useState({});
 
   useEffect(() => {
@@ -3922,6 +3923,13 @@ function AdminDocs() {
   }
 
   const needsReindex = docs.some(d => d.has_vectors === false);
+  const filteredDocs = docs.filter((d) => {
+    const missingVectors = d.has_vectors === false;
+    if (filter === 'Searchable' && missingVectors) return false;
+    if (filter === 'Needs indexing' && !missingVectors) return false;
+    const haystack = `${d.name || ''} ${d.filename || ''} ${d.title || ''} ${d.file_type || ''}`.toLowerCase();
+    return haystack.includes(searchTerm.toLowerCase().trim());
+  });
 
   return (
     <>
@@ -3930,17 +3938,21 @@ function AdminDocs() {
       {needsReindex && (
         <div style={{ background: 'var(--signal-soft)', border: '1px solid var(--signal)', borderRadius: 10, padding: '12px 16px', marginBottom: 16, fontSize: 13, color: 'var(--signal)', display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 16, height: 16, flexShrink: 0 }}><Icons.alert /></div>
-          Some documents aren't searchable yet — the AI won't be able to find them. Click <strong>Re-index</strong> next to each affected document to activate it. This usually takes under 30 seconds.
+          Some documents aren't searchable yet. Click <strong>Re-index</strong> next to each affected document to activate it. This usually takes under 30 seconds.
         </div>
       )}
 
       <div className="docs-toolbar">
         <div className="docs-search">
           <div className="docs-search-ic"><Icons.search /></div>
-          <input placeholder="Search documents, topics, sources…" />
+          <input
+            placeholder="Search documents, topics, sources..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
         <div className="docs-filters">
-          {['All topics', 'Active', 'Reindex', 'Stale'].map((t) => (
+          {['All documents', 'Searchable', 'Needs indexing'].map((t) => (
             <span key={t} className={`docs-chip ${filter === t ? 'on' : ''}`} onClick={() => setFilter(t)}>{t}</span>
           ))}
         </div>
@@ -3949,7 +3961,7 @@ function AdminDocs() {
       <div className="panel">
         <div className="panel-head">
           <div className="panel-title"><span className="panel-title-ic"><Icons.files /></span>All <em>documents</em></div>
-          <span className="panel-tag">{docs.length} DOCUMENTS</span>
+          <span className="panel-tag">{filteredDocs.length} OF {docs.length} DOCUMENTS</span>
         </div>
         {docs.length === 0 ? (
           <div style={{ padding: '40px 20px', color: 'var(--text-3)', fontSize: 14, textAlign: 'center' }}>
@@ -3958,9 +3970,14 @@ function AdminDocs() {
         ) : (
           <div className="docs-table">
             <div className="docs-table-head">
-              <span>Document</span><span>Chunks</span><span>Status</span><span></span>
+            <span>Document</span><span>Sections</span><span>Status</span><span></span>
             </div>
-            {docs.map((d) => {
+            {filteredDocs.length === 0 && (
+              <div style={{ padding: '28px 20px', color: 'var(--text-3)', fontSize: 14, textAlign: 'center' }}>
+                No documents match this view.
+              </div>
+            )}
+            {filteredDocs.map((d) => {
               const missingVectors = d.has_vectors === false;
               return (
                 <div key={d.id || d.name} className="docs-table-row">
@@ -3971,7 +3988,7 @@ function AdminDocs() {
                       <div className="doc-meta">{d.file_type?.toUpperCase() || ''} {d.file_size_bytes ? `· ${Math.round(d.file_size_bytes / 1024)}KB` : ''}</div>
                     </div>
                   </div>
-                  <span style={{ fontSize: 12, color: 'var(--text-2)' }}>{d.chunk_count ? `${d.chunk_count} chunks` : '—'}</span>
+                  <span style={{ fontSize: 12, color: 'var(--text-2)' }}>{d.chunk_count ? `${d.chunk_count} sections` : '-'}</span>
                   <span className={`doc-status ${missingVectors ? 'warn' : ''}`}>
                     {missingVectors ? 'NOT SEARCHABLE' : (d.status || 'ACTIVE').toUpperCase()}
                   </span>
@@ -3983,7 +4000,7 @@ function AdminDocs() {
                         onClick={() => handleReingest(d.id)}
                         disabled={reindexing[d.id]}
                       >
-                        {reindexing[d.id] ? 'Indexing…' : 'Re-index'}
+                        {reindexing[d.id] ? 'Indexing...' : 'Re-index'}
                       </button>
                     )}
                     <button className="doc-action-btn" onClick={() => handleDelete(d.id)}>
@@ -4256,10 +4273,6 @@ function AdminScreen({ user, onBack, onLogout, onRewatch }) {
             </div>
             <div className="admin-header-r">
               <div className="range-pill">Last 30 days <span className="range-pill-mono">↓</span></div>
-              <button className="export-btn">
-                <div style={{ width: 13, height: 13 }}><Icons.download /></div>
-                Export
-              </button>
             </div>
           </div>
 

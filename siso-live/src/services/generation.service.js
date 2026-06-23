@@ -25,7 +25,7 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 async function generateAnswer(question, chunks, userId, conversationHistory = []) {
   const startTime = Date.now();
 
-  // Build context from chunks — this is what Claude reads
+  // Build source excerpts for Claude. Keep implementation terms out of the prompt.
   const context = chunks
     .map((chunk, i) =>
       `[Source ${i + 1}: ${chunk.source}]\n${chunk.text}`
@@ -69,8 +69,9 @@ ANSWER LENGTH — STRICT:
 - Never pad. Stop when the answer is complete.
 
 SOURCE RULE:
-Answer only from the document chunks provided. Do not draw on outside knowledge.
-If two chunks present genuine nuance, surface it: "The documents show some tension here — [Doc A] says X while [Doc B] says Y."
+Answer only from the source excerpts provided. Do not draw on outside knowledge.
+If two source excerpts present genuine nuance, surface it: "The documents show some tension here, [Doc A] says X while [Doc B] says Y."
+Never mention chunks, chunking, embeddings, retrieval, vectors, RAG, prompts, context windows, or internal system mechanics to the learner.
 
 CONVERSATIONAL MEMORY:
 You have the full conversation history. Use it.
@@ -79,10 +80,10 @@ You have the full conversation history. Use it.
 - Guide the learner deeper as the conversation matures
 
 ESCALATION — ALMOST NEVER:
-If document chunks are provided, you MUST answer. Chunks exist because they matched this question.
+If source excerpts are provided, you MUST answer. They were selected because they matched this question.
 - Never escalate because only one source is available — single-source answers are expected.
 - Never escalate foundational questions — they always have answers in the documents.
-- Escalate only when the chunks are literally about a completely unrelated topic.
+- Escalate only when the source excerpts are literally about a completely unrelated topic.
 - When in doubt, answer. A grounded short answer beats silence.
 - For a genuine escalation: omit Source and NUDGE entirely. Say only: "I don't have enough verified information to answer this confidently. For accurate guidance, please reach out to the SISO support desk. They're the right resource for this."
 
@@ -91,15 +92,15 @@ OFF-TOPIC HANDLING:
 - Politically charged questions: "That's outside what SISO Live! covers. I'm here to help with supplier inclusion and sustainability topics specific to AbbVie."
 - Ambiguous questions: ask one clarifying question before answering.
 
-NEVER: use markdown or special formatting characters, speculate outside source documents, use "diversity" where "inclusion" is correct, give legal advice, fabricate statistics or policy details, repeat prior answers or nudges.`;
+NEVER: use markdown or special formatting characters, speculate outside source documents, use "diversity" where "inclusion" is correct, give legal advice, fabricate statistics or policy details, repeat prior answers or nudges, discuss the retrieval process.`;
 
-  const userMessage = `DOCUMENT CHUNKS (retrieved because they match this question):
+  const userMessage = `APPROVED SOURCE EXCERPTS:
 ${context}
 
 ---
 QUESTION: ${question}
 
-INSTRUCTIONS: Document chunks are present above — you MUST answer from them. Do not escalate. Follow the trainer structure: Definition, Example, AbbVie Context, Takeaway, then "Source: [doc name]" and "NUDGE: [one question under 15 words]". Plain prose only — no markdown, no bullet lists.`;
+INSTRUCTIONS: Approved source excerpts are present above. You MUST answer from them. Do not escalate. Follow the trainer structure: Definition, Example, AbbVie Context, Takeaway, then "Source: [doc name]" and "NUDGE: [one question under 15 words]". Plain prose only. No markdown, no bullet lists, and no mention of chunks, retrieval, RAG, or other internal mechanics.`;
 
   // Build messages array: prior conversation + current question with context
   const priorMessages = (conversationHistory || [])
@@ -125,7 +126,7 @@ INSTRUCTIONS: Document chunks are present above — you MUST answer from them. D
     // Parse answer and nudge from response
     const nudgeMatch = fullResponse.match(/NUDGE:\s*(.+)$/m);
     const nudge = nudgeMatch ? nudgeMatch[1].trim() : null;
-    const answer = fullResponse.replace(/\nNUDGE:.+$/m, '').trim();
+    const answer = sanitizeAnswer(fullResponse.replace(/\nNUDGE:.+$/m, '').trim());
 
     const lowerResponse = fullResponse.toLowerCase();
     const isInsufficient =
@@ -165,6 +166,17 @@ INSTRUCTIONS: Document chunks are present above — you MUST answer from them. D
     logger.error({ error, questionLength: question.length }, 'Generation failed');
     throw new Error(`Failed to generate answer: ${error.message}`);
   }
+}
+
+function sanitizeAnswer(answer) {
+  return String(answer || '')
+    .replace(/\bbased on (the )?(document )?chunks?\b/gi, 'based on the approved source material')
+    .replace(/\bbased on (the )?chunking\b/gi, 'based on the approved source material')
+    .replace(/\bfrom (the )?(document )?chunks?\b/gi, 'from the approved source material')
+    .replace(/\bthe chunks?\b/gi, 'the source material')
+    .replace(/\bchunking\b/gi, 'source processing')
+    .replace(/\bRAG\b/g, 'source search')
+    .trim();
 }
 
 async function updateSpendTracking(inputTokens, outputTokens, cost) {

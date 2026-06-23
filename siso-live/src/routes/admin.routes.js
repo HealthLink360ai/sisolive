@@ -7,6 +7,36 @@ const router = express.Router();
 // All admin routes require admin role
 router.use(requireAdmin);
 
+function isDomainRelevantQuestion(question) {
+  const text = String(question || '').toLowerCase();
+  const blocked = [
+    'capital city of mars',
+    'capital of mars',
+    'today\'s date',
+    'todays date',
+    'what date is it',
+    'current date',
+    'current time',
+  ];
+  if (blocked.some(term => text.includes(term))) return false;
+
+  const domainTerms = [
+    'abbvie',
+    'siso',
+    'supplier',
+    'sustainability',
+    'inclusion',
+    'underrepresented',
+    'diverse',
+    'diversity',
+    'procurement',
+    'sourcing',
+    'vendor',
+    'business',
+  ];
+  return domainTerms.some(term => text.includes(term));
+}
+
 // GET /api/admin/stats + /api/admin/dashboard — summary metrics
 async function dashboardHandler(req, res) {
   const currentMonth = new Date().toISOString().slice(0, 7);
@@ -40,7 +70,7 @@ async function dashboardHandler(req, res) {
 
     const totalQueries = parseInt(queries.rows[0].count);
     const totalEscalations = parseInt(escalations.rows[0].count);
-    const topQRows = topQueriesResult.rows;
+    const topQRows = topQueriesResult.rows.filter(r => isDomainRelevantQuestion(r.question));
     const maxCount = topQRows.length > 0 ? parseInt(topQRows[0].count) : 1;
     const topQueries = topQRows.map(r => [
       r.question,
@@ -48,7 +78,9 @@ async function dashboardHandler(req, res) {
       Math.max(8, Math.round((parseInt(r.count) / maxCount) * 100)),
     ]);
 
-    const knowledgeGaps = gapsResult.rows.map(r => [r.question, parseInt(r.count)]);
+    const knowledgeGaps = gapsResult.rows
+      .filter(r => isDomainRelevantQuestion(r.question))
+      .map(r => [r.question, parseInt(r.count)]);
 
     res.json({
       activeUsers: parseInt(users.rows[0].count),
@@ -100,7 +132,7 @@ router.get('/analytics/escalations', async (req, res) => {
       ORDER BY created_at DESC
       LIMIT 50
     `);
-    res.json(result.rows);
+    res.json(result.rows.filter(r => isDomainRelevantQuestion(r.question)));
   } catch (error) {
     logger.error({ error }, 'Escalations fetch failed');
     res.status(500).json({ error: 'Failed to load escalations' });
