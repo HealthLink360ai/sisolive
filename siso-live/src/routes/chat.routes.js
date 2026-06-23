@@ -22,7 +22,7 @@ async function chatHandler(req, res) {
     const result = await handleQuery(question.trim(), userId, conversationHistory || []);
     res.json(result);
   } catch (error) {
-    logger.error({ error, userId, question: question.slice(0, 100) }, 'Chat query failed');
+    logger.error({ error, userId, questionLength: question?.length || 0 }, 'Chat query failed');
     // Return the real error message so failures are diagnosable
     res.status(500).json({ error: error.message || 'Failed to process your question. Please try again.' });
   }
@@ -33,21 +33,32 @@ router.post('/query', checkDailyLimit, chatHandler);
 
 // POST /api/chat/feedback — thumbs up/down on a response
 router.post('/feedback', async (req, res) => {
-  const { queryId, rating, comment } = req.body;
+  const { queryId, messageId, rating, type, comment } = req.body;
+  const feedbackQueryId = queryId || messageId;
+  const feedbackRating = rating || type;
   const userId = req.user.id;
 
-  if (!queryId || !['up', 'down'].includes(rating)) {
+  if (!feedbackQueryId || !['up', 'down'].includes(feedbackRating)) {
     return res.status(400).json({ error: 'Valid queryId and rating (up/down) required.' });
   }
 
   try {
+    const ownerCheck = await query(
+      'SELECT id FROM queries WHERE id = $1 AND user_id = $2',
+      [feedbackQueryId, userId]
+    );
+
+    if (ownerCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Query not found.' });
+    }
+
     await query(`
       INSERT INTO feedback (query_id, user_id, rating, comment)
       VALUES ($1, $2, $3, $4)
       ON CONFLICT DO NOTHING
-    `, [queryId, userId, rating, comment || null]);
+    `, [feedbackQueryId, userId, feedbackRating, comment || null]);
 
-    logger.info({ userId, queryId, rating }, 'Feedback recorded');
+    logger.info({ userId, queryId: feedbackQueryId, rating: feedbackRating }, 'Feedback recorded');
     res.json({ success: true, message: 'Thank you for your feedback.' });
   } catch (error) {
     logger.error({ error }, 'Failed to save feedback');

@@ -12,24 +12,37 @@ async function dashboardHandler(req, res) {
   const currentMonth = new Date().toISOString().slice(0, 7);
   try {
     const [users, queries, spend, escalations, avgConfResult, topQueriesResult, gapsResult] = await Promise.all([
-      query("SELECT COUNT(*) FROM users WHERE last_active > NOW() - INTERVAL '30 days'"),
-      query("SELECT COUNT(*) FROM queries WHERE created_at > NOW() - INTERVAL '30 days'"),
+      query('SELECT COUNT(*) FROM users WHERE last_active > NOW() - INTERVAL \'30 days\''),
+      query('SELECT COUNT(*) FROM queries WHERE created_at > NOW() - INTERVAL \'30 days\''),
       query('SELECT estimated_cost_usd, query_count FROM spend_tracking WHERE month = $1', [currentMonth]),
-      query("SELECT COUNT(*) FROM queries WHERE was_escalated = true AND created_at > NOW() - INTERVAL '30 days'"),
-      query("SELECT ROUND(AVG(confidence_score) * 100) as avg_conf FROM queries WHERE created_at > NOW() - INTERVAL '30 days' AND confidence_score IS NOT NULL"),
-      query("SELECT question, COUNT(*) as count FROM queries WHERE created_at > NOW() - INTERVAL '30 days' GROUP BY question ORDER BY count DESC LIMIT 10"),
-      query("SELECT question, COUNT(*) as count FROM queries WHERE was_escalated = true AND created_at > NOW() - INTERVAL '30 days' GROUP BY question ORDER BY count DESC LIMIT 10"),
+      query('SELECT COUNT(*) FROM queries WHERE was_escalated = true AND created_at > NOW() - INTERVAL \'30 days\''),
+      query('SELECT ROUND(AVG(confidence_score) * 100) AS avg_conf FROM queries WHERE created_at > NOW() - INTERVAL \'30 days\' AND confidence_score IS NOT NULL'),
+      query(`
+        SELECT question, COUNT(*) AS count
+        FROM queries
+        WHERE created_at > NOW() - INTERVAL '30 days'
+        GROUP BY question
+        ORDER BY count DESC
+        LIMIT 10
+      `),
+      query(`
+        SELECT question, COUNT(*) AS count
+        FROM queries
+        WHERE was_escalated = true AND created_at > NOW() - INTERVAL '30 days'
+        GROUP BY question
+        ORDER BY count DESC
+        LIMIT 10
+      `),
     ]);
 
     const totalQueries = parseInt(queries.rows[0].count);
     const totalEscalations = parseInt(escalations.rows[0].count);
-
     const topQRows = topQueriesResult.rows;
     const maxCount = topQRows.length > 0 ? parseInt(topQRows[0].count) : 1;
     const topQueries = topQRows.map(r => [
       r.question,
       parseInt(r.count),
-      Math.round((parseInt(r.count) / maxCount) * 100),
+      Math.max(8, Math.round((parseInt(r.count) / maxCount) * 100)),
     ]);
 
     const knowledgeGaps = gapsResult.rows.map(r => [r.question, parseInt(r.count)]);
@@ -109,11 +122,30 @@ router.get('/analytics/feedback', async (req, res) => {
 router.get('/users', async (req, res) => {
   try {
     const result = await query(`
-      SELECT id, email, name, role, department, first_login, created_at, last_active
-      FROM users
-      ORDER BY last_active DESC
+      SELECT
+        u.id,
+        u.email,
+        u.name,
+        u.role,
+        u.department,
+        u.first_login,
+        u.created_at,
+        u.last_active,
+        COUNT(q.id)::int AS query_count
+      FROM users u
+      LEFT JOIN queries q
+        ON q.user_id = u.id
+       AND q.created_at > NOW() - INTERVAL '30 days'
+      GROUP BY u.id
+      ORDER BY u.last_active DESC NULLS LAST
+      LIMIT 100
     `);
-    res.json(result.rows);
+    res.json(result.rows.map(user => ({
+      ...user,
+      queryCount: user.query_count,
+      lastActive: user.last_active,
+      is_admin: user.role === 'admin',
+    })));
   } catch (error) {
     logger.error({ error }, 'Users fetch failed');
     res.status(500).json({ error: 'Failed to load users' });
@@ -128,9 +160,17 @@ router.get('/documents', async (req, res) => {
              d.status, d.has_vectors, d.uploaded_at, d.processed_at, u.name as uploaded_by
       FROM documents d
       LEFT JOIN users u ON d.uploaded_by = u.id
+      WHERE d.status <> 'archived'
       ORDER BY d.uploaded_at DESC
     `);
-    res.json(result.rows);
+    res.json(result.rows.map(doc => ({
+      ...doc,
+      name: doc.filename,
+      chunks: doc.chunk_count,
+      size: doc.file_size_bytes
+        ? `${(doc.file_size_bytes / 1024 / 1024).toFixed(1)} MB`
+        : '',
+    })));
   } catch (error) {
     logger.error({ error }, 'Documents fetch failed');
     res.status(500).json({ error: 'Failed to load documents' });

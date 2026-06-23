@@ -71,7 +71,7 @@ async function retrieveRelevantChunks(question) {
   const matches = searchResults.matches || [];
 
   if (matches.length === 0) {
-    logger.info({ question: question.slice(0, 100) }, 'No matching chunks found');
+    logger.info({ questionLength: question.length }, 'No matching chunks found');
     return {
       chunks: [],
       confidence: 0,
@@ -100,7 +100,7 @@ async function retrieveRelevantChunks(question) {
   const retrievalTime = Date.now() - startTime;
 
   logger.info({
-    question: question.slice(0, 100),
+    questionLength: question.length,
     topScore: topScore.toFixed(4),
     confidence: `${(confidence * 100).toFixed(1)}%`,
     shouldEscalate,

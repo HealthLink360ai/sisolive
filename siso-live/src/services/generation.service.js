@@ -146,7 +146,7 @@ INSTRUCTIONS: Document chunks are present above — you MUST answer from them. D
 
     logger.info({
       userId,
-      question: question.slice(0, 100),
+      questionLength: question.length,
       answerLength: answer.length,
       inputTokens,
       outputTokens,
@@ -162,7 +162,7 @@ INSTRUCTIONS: Document chunks are present above — you MUST answer from them. D
       cost: cost.totalCost,
     };
   } catch (error) {
-    logger.error({ error, question: question.slice(0, 100) }, 'Generation failed');
+    logger.error({ error, questionLength: question.length }, 'Generation failed');
     throw new Error(`Failed to generate answer: ${error.message}`);
   }
 }

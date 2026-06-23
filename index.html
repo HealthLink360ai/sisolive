@@ -2508,7 +2508,7 @@ const AuthAPI = {
 
 const ChatAPI = {
   async query(question, conversationHistory) {
-    const r = await fetch(`${API_BASE}/api/chat`, {
+    const r = await fetch(`${API_BASE}/api/chat/query`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
       body: JSON.stringify({ question, conversationHistory: conversationHistory || [] })
@@ -2522,7 +2522,7 @@ const ChatAPI = {
     const r = await fetch(`${API_BASE}/api/chat/feedback`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
-      body: JSON.stringify({ messageId, type, comment })
+      body: JSON.stringify({ queryId: messageId, rating: type, comment })
     });
     if (r.status === 401) { dispatchUnauthorized(); return; }
     if (!r.ok) throw new Error('Feedback failed');
@@ -2532,7 +2532,7 @@ const ChatAPI = {
 
 const AdminAPI = {
   async getStats() {
-    const r = await fetch(`${API_BASE}/api/admin/stats`, {
+    const r = await fetch(`${API_BASE}/api/admin/dashboard`, {
       headers: { 'Authorization': `Bearer ${getToken()}` }
     });
     if (!r.ok) throw new Error('Failed to load stats');
@@ -2548,7 +2548,7 @@ const AdminAPI = {
   async uploadDocument(file) {
     const formData = new FormData();
     formData.append('file', file);
-    const r = await fetch(`${API_BASE}/api/admin/upload`, {
+    const r = await fetch(`${API_BASE}/api/upload/document`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${getToken()}` },
       body: formData
@@ -3087,7 +3087,7 @@ function ChatScreen({ user, onAdmin, onLogout, onRewatch }) {
       const { sourceInText } = parseAnswer((!escalated && conf >= 45) ? answer : null);
       const apiSource = result.sources?.[0]?.filename || null;
       setMessages((m) => [...m, {
-        id: Date.now() + 1, role: 'ai',
+        id: result.queryId || Date.now() + 1, role: 'ai',
         text: (!escalated && conf >= 45) ? answer : null,
         conf, escalated,
         source: sourceInText || apiSource || null,
@@ -3672,7 +3672,7 @@ function AdminUpload() {
             onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}>
             <div className="up-ic"><div style={{ width: 22, height: 22 }}><Icons.upload /></div></div>
             <div className="up-h">Drop files to ingest</div>
-            <div className="up-p">Files are automatically chunked and embedded into the RAG index. PDFs are OCR'd, videos transcribed.</div>
+            <div className="up-p">PDF, DOCX, CSV, and TXT files are chunked and embedded into the RAG index after upload.</div>
             <div className="file-pills">
               {['PDF', 'DOCX', 'CSV', 'TXT'].map((t) => (
                 <span key={t} className="file-pill">{t}</span>

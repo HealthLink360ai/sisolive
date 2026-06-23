@@ -35,8 +35,8 @@ async function handleQuery(question, userId, conversationHistory = []) {
   const cached = await getCachedAnswer(questionHash);
   if (cached) {
     logger.info({ userId, questionHash, source: 'cache' }, 'Cache hit');
-    await logQuery({ userId, question, ...cached, fromCache: true });
-    return { ...cached, fromCache: true };
+    const queryId = await logQuery({ userId, question, ...cached, fromCache: true });
+    return { ...cached, queryId, fromCache: true };
   }
 
   // Step 2: Retrieve relevant document chunks from Pinecone
@@ -46,7 +46,7 @@ async function handleQuery(question, userId, conversationHistory = []) {
   // If chunks exist, always attempt generation regardless of confidence score:
   // retrieval scores vary by domain and Claude is the authoritative judge of sufficiency.
   if (chunks.length === 0) {
-    logger.warn({ userId, question: question.slice(0, 100) }, 'Escalating: zero chunks returned from Pinecone — index may be empty or unavailable');
+    logger.warn({ userId, questionLength: question.length }, 'Escalating: zero chunks returned from Pinecone — index may be empty or unavailable');
     const escalationResult = {
       answer: null,
       nudge: null,
@@ -56,8 +56,8 @@ async function handleQuery(question, userId, conversationHistory = []) {
       sources: [],
       responseTimeMs: Date.now() - startTime,
     };
-    await logQuery({ userId, question, ...escalationResult });
-    return escalationResult;
+    const queryId = await logQuery({ userId, question, ...escalationResult });
+    return { ...escalationResult, queryId };
   }
 
   logger.info({ topScore, chunksFound: chunks.length }, 'Chunks found — proceeding to generation');
@@ -78,8 +78,8 @@ async function handleQuery(question, userId, conversationHistory = []) {
       sources: [],
       responseTimeMs: Date.now() - startTime,
     };
-    await logQuery({ userId, question, ...insufficientResult });
-    return insufficientResult;
+    const queryId = await logQuery({ userId, question, ...insufficientResult });
+    return { ...insufficientResult, queryId };
   }
 
   // Step 6: Package the final result
@@ -103,16 +103,17 @@ async function handleQuery(question, userId, conversationHistory = []) {
   await cacheAnswer(questionHash, result);
 
   // Step 8: Log to database for analytics and compliance
-  await logQuery({ userId, question, ...result });
+  const queryId = await logQuery({ userId, question, ...result });
 
-  return result;
+  return { ...result, queryId };
 }
 
 async function logQuery({ userId, question, answer, confidence, shouldEscalate, sources, responseTimeMs, tokens }) {
   try {
-    await query(`
+    const result = await query(`
       INSERT INTO queries (user_id, question, answer, confidence_score, was_escalated, source_documents, tokens_used, response_time_ms)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING id
     `, [
       userId,
       question,
@@ -123,8 +124,10 @@ async function logQuery({ userId, question, answer, confidence, shouldEscalate, 
       tokens?.input + tokens?.output || 0,
       responseTimeMs,
     ]);
+    return result.rows[0]?.id || null;
   } catch (error) {
     logger.error({ error }, 'Failed to log query');
+    return null;
   }
 }
 
