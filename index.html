@@ -4032,7 +4032,7 @@ function AdminAccuracy() {
 /* ============================================================
    ADMIN SCREEN
    ============================================================ */
-function AdminScreen({ user, onBack, onLogout }) {
+function AdminScreen({ user, onBack, onLogout, onRewatch }) {
   const [activeTab, setActiveTab] = useState('dashboard');
 
   const navItems = [
@@ -4182,23 +4182,25 @@ function App() {
     setSignedOut(true);
   };
 
+  const isAdmin = !!(user?.is_admin || user?.role === 'admin');
+
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      {screen === 'login' && (
+      <div style={{ display: screen === 'login' ? 'contents' : 'none' }}>
         <LoginScreen onLogin={handleLogin} signedOut={signedOut} onDismissSignedOut={() => setSignedOut(false)} />
-      )}
-      {screen === 'onboard' && (
+      </div>
+      <div style={{ display: screen === 'onboard' ? 'contents' : 'none' }}>
         <OnboardScreen user={user} onEnter={() => { localStorage.setItem('siso_onboard_done', '1'); setScreen('chat'); }} />
-      )}
-      {screen === 'chat' && (
+      </div>
+      <div style={{ display: screen === 'chat' ? 'contents' : 'none' }}>
         <ChatScreen user={user}
-          onAdmin={(user?.is_admin || user?.role === 'admin') ? () => setScreen('admin') : null}
+          onAdmin={isAdmin ? () => setScreen('admin') : null}
           onLogout={handleLogout}
           onRewatch={() => setScreen('onboard')} />
-      )}
-      {screen === 'admin' && (
-        <AdminScreen user={user} onBack={() => setScreen('chat')} onLogout={handleLogout} />
-      )}
+      </div>
+      <div style={{ display: screen === 'admin' ? 'contents' : 'none' }}>
+        <AdminScreen user={user} onBack={() => setScreen('chat')} onLogout={handleLogout} onRewatch={() => setScreen('onboard')} />
+      </div>
     </div>
   );
 }
