@@ -629,6 +629,14 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
   width: 100%;
 }
 .btn-sso:hover { border-color: rgba(244,241,234,0.32); background: rgba(244,241,234,0.04); }
+.btn-sso:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+.btn-sso:disabled:hover {
+  border-color: rgba(244,241,234,0.16);
+  background: transparent;
+}
 
 .login-error {
   font-size: 13px;
@@ -2480,6 +2488,10 @@ const TOKEN_KEY = 'siso_token';
 const USER_KEY  = 'siso_user';
 
 function getToken() { return localStorage.getItem(TOKEN_KEY); }
+function clearStoredSession() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
+}
 
 // Global 401 handler — set by App on mount, called by any API that gets Unauthorized
 let _onUnauthorized = null;
@@ -2535,6 +2547,7 @@ const AdminAPI = {
     const r = await fetch(`${API_BASE}/api/admin/dashboard`, {
       headers: { 'Authorization': `Bearer ${getToken()}` }
     });
+    if (r.status === 401) { dispatchUnauthorized(); throw new Error('Session expired. Please sign in again.'); }
     if (!r.ok) throw new Error('Failed to load stats');
     return r.json();
   },
@@ -2542,6 +2555,7 @@ const AdminAPI = {
     const r = await fetch(`${API_BASE}/api/admin/users`, {
       headers: { 'Authorization': `Bearer ${getToken()}` }
     });
+    if (r.status === 401) { dispatchUnauthorized(); throw new Error('Session expired. Please sign in again.'); }
     if (!r.ok) throw new Error('Failed to load users');
     return r.json();
   },
@@ -2554,6 +2568,7 @@ const AdminAPI = {
       body: formData
     });
     const d = await r.json().catch(() => ({}));
+    if (r.status === 401) { dispatchUnauthorized(); throw new Error('Session expired. Please sign in again.'); }
     if (!r.ok) throw new Error(d.error || 'Upload failed');
     return d;
   },
@@ -2561,6 +2576,7 @@ const AdminAPI = {
     const r = await fetch(`${API_BASE}/api/admin/documents`, {
       headers: { 'Authorization': `Bearer ${getToken()}` }
     });
+    if (r.status === 401) { dispatchUnauthorized(); throw new Error('Session expired. Please sign in again.'); }
     if (!r.ok) throw new Error('Failed to load documents');
     return r.json();
   },
@@ -2569,6 +2585,7 @@ const AdminAPI = {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${getToken()}` }
     });
+    if (r.status === 401) { dispatchUnauthorized(); throw new Error('Session expired. Please sign in again.'); }
     if (!r.ok) throw new Error('Failed to delete document');
     return r.json();
   },
@@ -2875,9 +2892,9 @@ function LoginScreen({ onLogin, signedOut, onDismissSignedOut }) {
               <div className="divider-line" />
             </div>
 
-            <button className="btn-sso" onClick={handleLogin}>
+            <button className="btn-sso" type="button" disabled title="Enterprise SSO will be enabled in the final rollout">
               <div style={{ width: 16, height: 16, color: 'var(--text-on-ink-2)' }}><Icons.shield /></div>
-              Continue with AbbVie SSO
+              AbbVie SSO coming soon
             </button>
 
             <div className="login-card-foot">
@@ -3449,17 +3466,32 @@ function ChatScreen({ user, onAdmin, onLogout, onRewatch }) {
 function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     AdminAPI.getStats()
-      .then(d => { setStats(d); setLoading(false); })
-      .catch(() => setLoading(false));
+      .then(d => { setStats(d); setError(''); setLoading(false); })
+      .catch((e) => { setError(e.message || 'Dashboard data is temporarily unavailable.'); setLoading(false); });
   }, []);
 
   if (loading) {
     return (
       <div style={{ padding: 40, color: 'var(--text-3)', fontFamily: 'var(--mono)', fontSize: 13, textAlign: 'center' }}>
         Loading dashboard…
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="panel" style={{ gridColumn: '1 / -1' }}>
+        <div className="panel-head">
+          <div className="panel-title"><span className="panel-title-ic"><Icons.alert /></span>Dashboard <em>unavailable</em></div>
+          <span className="panel-tag">CHECK SESSION OR API</span>
+        </div>
+        <div style={{ padding: '32px 24px', color: 'var(--text-2)', fontSize: 14, lineHeight: 1.55 }}>
+          {error}
+        </div>
       </div>
     );
   }
@@ -4249,7 +4281,13 @@ function App() {
   const [screen, setScreen] = useState(() => {
     try {
       const u = localStorage.getItem(USER_KEY);
-      if (!u) return 'login';
+      const tok = getToken();
+      if (!u || !tok) {
+        clearStoredSession();
+        return 'login';
+      }
+      const parsed = JSON.parse(u);
+      if (parsed?.is_admin || parsed?.role === 'admin') return 'admin';
       const seen = localStorage.getItem('siso_onboard_done');
       return seen ? 'chat' : 'onboard';
     } catch { return 'login'; }
@@ -4257,7 +4295,7 @@ function App() {
   const [user, setUser] = useState(() => {
     try {
       const u = localStorage.getItem(USER_KEY);
-      return u ? JSON.parse(u) : null;
+      return u && getToken() ? JSON.parse(u) : null;
     } catch { return null; }
   });
   const [signedOut, setSignedOut] = useState(false);
@@ -4265,8 +4303,7 @@ function App() {
   // Register the global 401 handler and validate stored session on load
   useEffect(() => {
     setOnUnauthorized(() => {
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(USER_KEY);
+      clearStoredSession();
       setUser(null);
       setScreen('login');
       setSignedOut(false);
@@ -4274,11 +4311,14 @@ function App() {
     // Validate stored token — if expired or invalid, clear session now
     if (getToken()) {
       AuthAPI.validate().catch(() => {
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(USER_KEY);
+        clearStoredSession();
         setUser(null);
         setScreen('login');
       });
+    } else if (localStorage.getItem(USER_KEY)) {
+      clearStoredSession();
+      setUser(null);
+      setScreen('login');
     }
   }, []);
 
@@ -4298,8 +4338,7 @@ function App() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
+    clearStoredSession();
     setUser(null);
     setScreen('login');
     setSignedOut(true);
