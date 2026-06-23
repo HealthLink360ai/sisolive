@@ -22,6 +22,7 @@ const rateLimiter = rateLimit({
   max: parseInt(process.env.MAX_QUERIES_PER_MINUTE) || 10,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => req.user?.role === 'admin',
   keyGenerator: (req) => req.user?.id || req.ip, // Limit per user, not per IP
   handler: (req, res) => {
     logger.warn({ userId: req.user?.id }, 'Rate limit exceeded');
@@ -37,6 +38,7 @@ const rateLimiter = rateLimit({
 async function checkDailyLimit(req, res, next) {
   const userId = req.user?.id;
   if (!userId) return next();
+  if (req.user?.role === 'admin') return next();
 
   try {
     const redis = getRedis();
