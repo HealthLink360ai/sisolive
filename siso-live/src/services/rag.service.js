@@ -143,25 +143,7 @@ function isOutOfScopeQuestion(question, conversationHistory = []) {
     'current time',
   ];
   if (blocked.some(term => text.includes(term))) return true;
-
-  const domainTerms = [
-    'abbvie',
-    'siso',
-    'supplier',
-    'sustainability',
-    'inclusion',
-    'underrepresented',
-    'diverse',
-    'diversity',
-    'procurement',
-    'sourcing',
-    'vendor',
-  ];
-  const hasDomainTerm = domainTerms.some(term => text.includes(term));
-  if (hasDomainTerm) return false;
-
-  // Allow natural follow-ups after the user has already started a domain conversation.
-  return (conversationHistory || []).length === 0;
+  return false;
 }
 
 async function logQuery({ userId, question, answer, confidence, shouldEscalate, sources, responseTimeMs, tokens }) {

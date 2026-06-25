@@ -218,6 +218,7 @@ router.post('/users', async (req, res) => {
   const name = String(req.body.name || '').trim();
   const department = String(req.body.department || 'SISO Pilot').trim();
   const password = String(req.body.password || '');
+  const role = ['user', 'admin'].includes(req.body.role) ? req.body.role : 'user';
 
   if (!email.endsWith('@abbvie.com')) {
     return res.status(400).json({ error: 'Use an AbbVie email address for demo users.' });
@@ -233,16 +234,16 @@ router.post('/users', async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 10);
     const result = await query(`
       INSERT INTO users (email, name, role, department, password_hash, first_login, last_active)
-      VALUES ($1, $2, 'user', $3, $4, true, NOW())
+      VALUES ($1, $2, $3, $4, $5, true, NOW())
       ON CONFLICT (email) DO UPDATE SET
         name = EXCLUDED.name,
-        role = 'user',
+        role = EXCLUDED.role,
         department = EXCLUDED.department,
         password_hash = EXCLUDED.password_hash,
         first_login = true,
         last_active = NOW()
       RETURNING id, email, name, role, department, first_login, created_at, last_active
-    `, [email, name, department, passwordHash]);
+    `, [email, name, role, department, passwordHash]);
 
     logger.info({ adminId: req.user.id, demoUserId: result.rows[0].id, email }, 'Demo user created or reset');
     res.status(201).json({ user: result.rows[0] });
