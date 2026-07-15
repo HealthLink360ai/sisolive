@@ -204,7 +204,7 @@ This is a deliberate design choice rooted in learning science, not a technical l
 
 | Layer | What We Do | Why |
 |---|---|---|
-| Authentication | JWT tokens, 8h expiry | Secure, stateless, works serverless |
+| Authentication | JWT tokens, 24h expiry (configurable via JWT_EXPIRY) | Secure, stateless, works serverless |
 | Role separation | `user` vs `admin` roles | Regular users never see admin routes |
 | Rate limiting | 100 req/15min global, 10/15min auth | Prevents abuse and brute force |
 | HTTPS | Enforced in production | All data encrypted in transit |
@@ -216,4 +216,4 @@ This is a deliberate design choice rooted in learning science, not a technical l
 ---
 
 *Document version 1.0 — Updated as build progresses*
-*Project: SISO Live! | Client: AbbVie | Built by: [Your Agency Name]*
+*Project: SISO Live! | Client: AbbVie*

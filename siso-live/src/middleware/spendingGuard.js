@@ -44,9 +44,14 @@ async function spendingGuard(req, res, next) {
     req.currentMonthSpend = currentSpend;
     next();
   } catch (error) {
-    // If DB is unavailable, don't block — log and continue
-    logger.error({ error }, 'Spending guard check failed, allowing request');
-    next();
+    // Fail closed: if we can't verify we're under budget, don't let the
+    // request through unchecked — that would defeat the whole cap. A
+    // brief 503 during a DB blip is a better trade-off than unbounded spend.
+    logger.error({ error }, 'Spending guard check failed — blocking request until service recovers');
+    res.status(503).json({
+      error: 'Service temporarily unavailable. Please try again shortly.',
+      code: 'SPENDING_GUARD_UNAVAILABLE',
+    });
   }
 }
 

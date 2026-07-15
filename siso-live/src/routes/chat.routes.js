@@ -23,8 +23,8 @@ async function chatHandler(req, res) {
     res.json(result);
   } catch (error) {
     logger.error({ error, userId, questionLength: question?.length || 0 }, 'Chat query failed');
-    // Return the real error message so failures are diagnosable
-    res.status(500).json({ error: error.message || 'Failed to process your question. Please try again.' });
+    // Log the real error server-side; never echo internals to the client
+    res.status(500).json({ error: 'Failed to process your question. Please try again.' });
   }
 }
 

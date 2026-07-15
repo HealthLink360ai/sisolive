@@ -70,9 +70,14 @@ async function checkDailyLimit(req, res, next) {
     req.dailyQueryCount = current;
     next();
   } catch (error) {
-    // If Redis is down, don't block the user — just log and continue
-    logger.error({ error }, 'Rate limit check failed, allowing request');
-    next();
+    // Fail closed: if Redis is down we can't verify the daily cap, so don't
+    // let the request through unchecked — that would defeat the whole
+    // limit. A brief 503 is a better trade-off than unbounded usage.
+    logger.error({ error }, 'Daily limit check failed — blocking request until service recovers');
+    res.status(503).json({
+      error: 'Service temporarily unavailable. Please try again shortly.',
+      code: 'DAILY_LIMIT_CHECK_UNAVAILABLE',
+    });
   }
 }
 

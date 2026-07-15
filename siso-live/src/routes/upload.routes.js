@@ -1,6 +1,5 @@
 const express = require('express');
 const multer = require('multer');
-const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const { requireAdmin } = require('../middleware/auth');
@@ -9,13 +8,18 @@ const { query } = require('../config/database');
 const { logger } = require('../utils/logger');
 const router = express.Router();
 
-const ALLOWED_TYPES = [
-  'application/pdf',
-  'text/csv',
-  'text/plain',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
-  'application/msword', // .doc (older Word)
-];
+// Fixed allow-list mapping mimetype -> stored extension. The stored
+// filename/extension and the file_type recorded in the DB are always
+// derived from this map, never from the client-supplied originalname —
+// that field is attacker-controlled and only used for display.
+const MIME_TO_EXT = {
+  'application/pdf': 'pdf',
+  'text/csv': 'csv',
+  'text/plain': 'txt',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+  'application/msword': 'doc',
+};
+const ALLOWED_TYPES = Object.keys(MIME_TO_EXT);
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const UPLOAD_DIR = '/tmp/siso-uploads';
 const INGESTION_TIMEOUT_MS = 55000; // Allow up to 55s for AI-based PDF extraction on large files
@@ -25,7 +29,7 @@ try { fs.mkdirSync(UPLOAD_DIR, { recursive: true }); } catch (e) { /* non-fatal 
 
 const storage = multer.diskStorage({
   destination: UPLOAD_DIR,
-  filename: (req, file, cb) => cb(null, `${uuidv4()}${path.extname(file.originalname)}`),
+  filename: (req, file, cb) => cb(null, `${uuidv4()}.${MIME_TO_EXT[file.mimetype] || 'bin'}`),
 });
 
 const upload = multer({
@@ -39,6 +43,28 @@ const upload = multer({
     }
   },
 });
+
+// Client-supplied Content-Type is trivially spoofable, so verify the actual
+// file bytes match what was claimed before we trust and ingest it. CSV/TXT
+// have no reliable magic number, so those are accepted on mimetype alone.
+const FILE_SIGNATURES = {
+  pdf: [Buffer.from('%PDF')],
+  docx: [Buffer.from([0x50, 0x4b, 0x03, 0x04])], // docx is a zip container
+  doc: [Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1])], // OLE compound file
+};
+
+function verifyFileSignature(filePath, ext) {
+  const expectedSignatures = FILE_SIGNATURES[ext];
+  if (!expectedSignatures) return true;
+  const buffer = Buffer.alloc(8);
+  const fd = fs.openSync(filePath, 'r');
+  try {
+    fs.readSync(fd, buffer, 0, 8, 0);
+  } finally {
+    fs.closeSync(fd);
+  }
+  return expectedSignatures.some((sig) => buffer.slice(0, sig.length).equals(sig));
+}
 
 // Multer error handler — surfaces file-type and size errors to the client
 function handleMulterError(err, req, res, next) {
@@ -62,28 +88,34 @@ async function uploadHandler(req, res) {
     return res.status(400).json({ error: 'No file provided.' });
   }
 
-  // Enforce per-user upload limit (admins are exempt)
-  if (req.user.role !== 'admin') {
-    const countResult = await query(
-      'SELECT COUNT(*) FROM documents WHERE uploaded_by = $1 AND status != $2',
-      [req.user.id, 'error']
-    );
-    const count = parseInt(countResult.rows[0].count);
-    if (count >= UPLOAD_LIMIT_PER_USER) {
-      return res.status(403).json({
-        error: `You've reached the ${UPLOAD_LIMIT_PER_USER}-document limit. Please contact your SISO administrator to expand your knowledge base.`,
-        code: 'UPLOAD_LIMIT_REACHED',
-        current: count,
-        limit: UPLOAD_LIMIT_PER_USER,
-      });
-    }
-  }
-
-  const documentId = uuidv4();
   const { originalname, size, path: filePath } = req.file;
-  const fileType = path.extname(originalname).toLowerCase().slice(1);
+  const fileType = MIME_TO_EXT[req.file.mimetype];
 
   try {
+    if (!verifyFileSignature(filePath, fileType)) {
+      fs.unlinkSync(filePath);
+      return res.status(400).json({ error: 'File content does not match its declared type.' });
+    }
+
+    // Enforce per-user upload limit (admins are exempt)
+    if (req.user.role !== 'admin') {
+      const countResult = await query(
+        'SELECT COUNT(*) FROM documents WHERE uploaded_by = $1 AND status != $2',
+        [req.user.id, 'error']
+      );
+      const count = parseInt(countResult.rows[0].count);
+      if (count >= UPLOAD_LIMIT_PER_USER) {
+        return res.status(403).json({
+          error: `You've reached the ${UPLOAD_LIMIT_PER_USER}-document limit. Please contact your SISO administrator to expand your knowledge base.`,
+          code: 'UPLOAD_LIMIT_REACHED',
+          current: count,
+          limit: UPLOAD_LIMIT_PER_USER,
+        });
+      }
+    }
+
+    const documentId = uuidv4();
+
     // Create DB record first (status: processing)
     await query(`
       INSERT INTO documents (id, filename, file_type, file_size_bytes, status, uploaded_by)

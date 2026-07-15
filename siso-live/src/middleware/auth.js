@@ -19,6 +19,32 @@
 const jwt = require('jsonwebtoken');
 const { logger } = require('../utils/logger');
 
+// Refuse to boot with a missing, too-short, or still-placeholder JWT secret —
+// any of those means anyone can forge admin tokens, so this must fail loudly
+// at startup rather than accepting bad tokens later.
+const JWT_SECRET_PLACEHOLDER = 'change_this_to_a_random_32_char_string_minimum';
+const MIN_JWT_SECRET_LENGTH = 32;
+
+function assertValidJwtSecret(secret) {
+  if (!secret) {
+    throw new Error(
+      'JWT_SECRET is not set. Set a random string of at least 32 characters in your environment (see .env.example).'
+    );
+  }
+  if (secret.length < MIN_JWT_SECRET_LENGTH) {
+    throw new Error(
+      `JWT_SECRET is too short (${secret.length} chars). It must be at least ${MIN_JWT_SECRET_LENGTH} characters.`
+    );
+  }
+  if (secret === JWT_SECRET_PLACEHOLDER) {
+    throw new Error(
+      'JWT_SECRET is still set to the placeholder value from .env.example. Replace it with a real random secret before starting the server.'
+    );
+  }
+}
+
+assertValidJwtSecret(process.env.JWT_SECRET);
+
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // "Bearer <token>"

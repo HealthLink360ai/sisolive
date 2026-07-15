@@ -206,14 +206,48 @@ async function extractDocxText(filePath) {
   return text;
 }
 
+// Parses a single CSV line into fields, correctly handling quoted fields
+// that contain commas and escaped "" quotes — a plain split(',') mangles those.
+function parseCsvLine(line) {
+  const fields = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+
+    if (inQuotes) {
+      if (char === '"') {
+        if (line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        current += char;
+      }
+    } else if (char === '"') {
+      inQuotes = true;
+    } else if (char === ',') {
+      fields.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  fields.push(current.trim());
+  return fields;
+}
+
 async function extractCsvText(filePath) {
   // Convert CSV rows to readable sentences for better embedding
   const content = fs.readFileSync(filePath, 'utf8');
   const lines = content.split('\n').filter(l => l.trim());
-  const headers = lines[0].split(',').map(h => h.trim());
+  const headers = parseCsvLine(lines[0]);
 
   return lines.slice(1).map(line => {
-    const values = line.split(',').map(v => v.trim());
+    const values = parseCsvLine(line);
     return headers.map((h, i) => `${h}: ${values[i] || ''}`).join('. ');
   }).join('\n');
 }
