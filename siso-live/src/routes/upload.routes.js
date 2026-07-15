@@ -6,6 +6,7 @@ const { requireAdmin } = require('../middleware/auth');
 const { ingestDocument } = require('../services/ingestion.service');
 const { query } = require('../config/database');
 const { logger } = require('../utils/logger');
+const { logAudit } = require('../utils/auditLog');
 const router = express.Router();
 
 // Fixed allow-list mapping mimetype -> stored extension. The stored
@@ -82,7 +83,7 @@ function handleMulterError(err, req, res, next) {
 
 const UPLOAD_LIMIT_PER_USER = 20;
 
-// Upload handler — shared by POST /api/upload/document and POST /api/admin/upload
+// Upload handler — shared by POST /api/upload/document and POST /api/upload/ (both admin-only)
 async function uploadHandler(req, res) {
   if (!req.file) {
     return res.status(400).json({ error: 'No file provided.' });
@@ -90,6 +91,9 @@ async function uploadHandler(req, res) {
 
   const { originalname, size, path: filePath } = req.file;
   const fileType = MIME_TO_EXT[req.file.mimetype];
+  // Hoisted so the outer catch (audit logging on failure) can reference it even
+  // if the failure happens before/after it's assigned below.
+  let documentId;
 
   try {
     if (!verifyFileSignature(filePath, fileType)) {
@@ -114,7 +118,7 @@ async function uploadHandler(req, res) {
       }
     }
 
-    const documentId = uuidv4();
+    documentId = uuidv4();
 
     // Create DB record first (status: processing)
     await query(`
@@ -132,10 +136,23 @@ async function uploadHandler(req, res) {
 
     try {
       await Promise.race([
-        ingestDocument(filePath, documentId, originalname, req.user.id),
+        // Pass the server-verified fileType (derived from MIME_TO_EXT above), not the
+        // client-controlled originalname — see ingestion.service.js for why.
+        ingestDocument(filePath, documentId, originalname, req.user.id, fileType),
         ingestionTimeout,
       ]);
       const doc = await query('SELECT chunk_count FROM documents WHERE id = $1', [documentId]);
+      // Awaited (not fire-and-forget) — see the Vercel note above: work started after
+      // the response is sent is never guaranteed to complete. logAudit swallows its
+      // own errors, so this can't turn an audit-log hiccup into a failed upload.
+      await logAudit({
+        userId: req.user.id,
+        action: 'document.upload',
+        entityType: 'document',
+        entityId: documentId,
+        metadata: { filename: originalname, fileType, sizeBytes: size },
+        ipAddress: req.ip,
+      });
       return res.json({
         documentId,
         filename: originalname,
@@ -145,6 +162,14 @@ async function uploadHandler(req, res) {
       });
     } catch (ingestionErr) {
       if (ingestionErr.message === 'timeout') {
+        await logAudit({
+          userId: req.user.id,
+          action: 'document.upload',
+          entityType: 'document',
+          entityId: documentId,
+          metadata: { filename: originalname, fileType, sizeBytes: size, status: 'processing' },
+          ipAddress: req.ip,
+        });
         return res.json({
           documentId,
           filename: originalname,
@@ -157,13 +182,23 @@ async function uploadHandler(req, res) {
 
   } catch (error) {
     logger.error({ errorMessage: error.message, errorStack: error.stack, filename: originalname }, 'Upload failed');
+    await logAudit({
+      userId: req.user?.id,
+      action: 'document.upload_failed',
+      entityType: 'document',
+      entityId: documentId ?? null,
+      metadata: { filename: originalname, fileType, sizeBytes: size, error: error.message },
+      ipAddress: req.ip,
+    });
     res.status(500).json({ error: 'Upload failed. Please try again.' });
   }
 }
 
-// Register on both paths: /document (legacy) and / (frontend calls POST /api/admin/upload)
+// Register on both paths: /document (the frontend calls POST /api/upload/document) and /
+// (legacy path). Both are admin-only — uploads write directly into the shared RAG
+// knowledge base, so non-admins must never be able to reach either one.
 router.post('/document', requireAdmin, upload.single('file'), handleMulterError, uploadHandler);
-router.post('/', upload.single('file'), handleMulterError, uploadHandler);
+router.post('/', requireAdmin, upload.single('file'), handleMulterError, uploadHandler);
 
 // GET /api/upload/status/:documentId — check processing status
 router.get('/status/:documentId', requireAdmin, async (req, res) => {

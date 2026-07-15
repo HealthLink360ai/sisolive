@@ -6,7 +6,12 @@ async function connectDatabase() {
   pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     max: parseInt(process.env.DATABASE_POOL_SIZE) || 5,
-    ssl: { rejectUnauthorized: false },
+    // rejectUnauthorized: true — verifies the DB server's cert against Node's default
+    // CA store. This assumes the DB host presents a certificate trusted by that store
+    // (true for most managed Postgres providers like RDS/Neon/Supabase). If this breaks
+    // connectivity against a specific self-signed setup, supply the provider's CA cert
+    // explicitly (ssl: { ca: ... }) rather than reverting to rejectUnauthorized: false.
+    ssl: { rejectUnauthorized: true },
     connectionTimeoutMillis: 60000, // 60s — Neon free tier cold-starts can take ~30s
     idleTimeoutMillis: 30000,
   });
@@ -103,6 +108,48 @@ async function runMigrations() {
       updated_at TIMESTAMP DEFAULT NOW(),
       UNIQUE(month)
     )`);
+
+    // Real audit trail for pharma-compliance logging (previously promised in
+    // docs but never actually created — see docs/TECHNICAL_DECISIONS.md).
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS audit_log (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+        action VARCHAR(100) NOT NULL,
+        entity_type VARCHAR(50),
+        entity_id VARCHAR(255),
+        metadata JSONB,
+        ip_address VARCHAR(64),
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_audit_log_user_id ON audit_log(user_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_audit_log_created_at ON audit_log(created_at)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_audit_log_action ON audit_log(action)`);
+
+    // Enables session revocation on password reset (JWTs are stateless by
+    // design, but a reset should still be able to invalidate prior tokens).
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_changed_at TIMESTAMP`);
+
+    // Tracks real query activity separately from login activity, so "active
+    // users" reflects actual engagement instead of just authentication events.
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_query_at TIMESTAMP`);
+    await client.query(`
+      UPDATE users u SET last_query_at = sub.max_created
+      FROM (SELECT user_id, MAX(created_at) AS max_created FROM queries GROUP BY user_id) sub
+      WHERE u.id = sub.user_id AND u.last_query_at IS NULL
+    `);
+
+    // Indexes needed by per-user and time-windowed admin queries (none existed
+    // before — every filtered/grouped query on these columns was doing a full
+    // table scan).
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_queries_user_id ON queries(user_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_queries_created_at ON queries(created_at)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_queries_user_created ON queries(user_id, created_at DESC)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_queries_escalated_true ON queries(created_at) WHERE was_escalated = true`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_feedback_user_id ON feedback(user_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_feedback_query_id ON feedback(query_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_users_last_query_at ON users(last_query_at)`);
 
     logger.info('Database schema ready');
   } finally {

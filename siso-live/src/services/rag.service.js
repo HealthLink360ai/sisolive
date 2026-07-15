@@ -162,7 +162,15 @@ async function logQuery({ userId, question, answer, confidence, shouldEscalate, 
       tokens?.input + tokens?.output || 0,
       responseTimeMs,
     ]);
-    return result.rows[0]?.id || null;
+    const queryId = result.rows[0]?.id || null;
+    if (queryId) {
+      try {
+        await query('UPDATE users SET last_query_at = NOW() WHERE id = $1', [userId]);
+      } catch (updateError) {
+        logger.error({ error: updateError }, 'Failed to update users.last_query_at');
+      }
+    }
+    return queryId;
   } catch (error) {
     logger.error({ error }, 'Failed to log query');
     return null;

@@ -1,0 +1,7 @@
+siso-live/
+docs/
+qa/
+setup-local.sh
+netlify.toml
+.gitignore
+*.md

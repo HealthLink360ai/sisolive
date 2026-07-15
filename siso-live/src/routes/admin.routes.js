@@ -2,7 +2,9 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const { requireAdmin } = require('../middleware/auth');
 const { query } = require('../config/database');
+const { getRedis } = require('../config/redis');
 const { logger } = require('../utils/logger');
+const { logAudit } = require('../utils/auditLog');
 const router = express.Router();
 
 // All admin routes require admin role
@@ -62,7 +64,7 @@ async function dashboardHandler(req, res) {
   const currentMonth = new Date().toISOString().slice(0, 7);
   try {
     const [users, queries, spend, escalations, avgConfResult, topQueriesResult, gapsResult] = await Promise.all([
-      query('SELECT COUNT(*) FROM users WHERE last_active > NOW() - INTERVAL \'30 days\''),
+      query('SELECT COUNT(DISTINCT user_id) FROM queries WHERE created_at > NOW() - INTERVAL \'30 days\''),
       query('SELECT COUNT(*) FROM queries WHERE created_at > NOW() - INTERVAL \'30 days\''),
       query('SELECT estimated_cost_usd, query_count FROM spend_tracking WHERE month = $1', [currentMonth]),
       query('SELECT COUNT(*) FROM queries WHERE was_escalated = true AND created_at > NOW() - INTERVAL \'30 days\''),
@@ -147,10 +149,12 @@ router.get('/analytics/top-queries', async (req, res) => {
 router.get('/analytics/escalations', async (req, res) => {
   try {
     const result = await query(`
-      SELECT question, confidence_score, created_at
-      FROM queries
-      WHERE was_escalated = true AND created_at > NOW() - INTERVAL '30 days'
-      ORDER BY created_at DESC
+      SELECT q.id, q.question, q.confidence_score, q.created_at,
+             q.user_id, u.name AS user_name, u.email AS user_email, u.department AS user_department
+      FROM queries q
+      JOIN users u ON u.id = q.user_id
+      WHERE q.was_escalated = true AND q.created_at > NOW() - INTERVAL '30 days'
+      ORDER BY q.created_at DESC
       LIMIT 50
     `);
     res.json(result.rows.filter(r => isDomainRelevantQuestion(r.question)));
@@ -164,9 +168,11 @@ router.get('/analytics/escalations', async (req, res) => {
 router.get('/analytics/feedback', async (req, res) => {
   try {
     const result = await query(`
-      SELECT f.rating, f.comment, q.question, f.created_at
+      SELECT f.rating, f.comment, f.created_at, q.question, q.id AS query_id,
+             f.user_id, u.name AS user_name, u.email AS user_email, u.department AS user_department
       FROM feedback f
       JOIN queries q ON f.query_id = q.id
+      JOIN users u ON u.id = f.user_id
       WHERE f.created_at > NOW() - INTERVAL '30 days'
       ORDER BY f.created_at DESC
       LIMIT 100
@@ -191,24 +197,93 @@ router.get('/users', async (req, res) => {
         u.first_login,
         u.created_at,
         u.last_active,
+        u.last_query_at,
         COUNT(q.id)::int AS query_count
       FROM users u
       LEFT JOIN queries q
         ON q.user_id = u.id
        AND q.created_at > NOW() - INTERVAL '30 days'
       GROUP BY u.id
-      ORDER BY u.last_active DESC NULLS LAST
+      ORDER BY u.last_query_at DESC NULLS LAST
       LIMIT 100
     `);
     res.json(result.rows.map(user => ({
       ...user,
       queryCount: user.query_count,
       lastActive: user.last_active,
+      lastQueryAt: user.last_query_at,
       is_admin: user.role === 'admin',
     })));
   } catch (error) {
     logger.error({ error }, 'Users fetch failed');
     res.status(500).json({ error: 'Failed to load users' });
+  }
+});
+
+// GET /api/admin/users/:id/activity — per-user query/feedback drill-down
+router.get('/users/:id/activity', async (req, res) => {
+  const userId = req.params.id;
+  const page = Math.max(1, parseInt(req.query.page) || 1);
+  const pageSize = Math.min(100, Math.max(1, parseInt(req.query.pageSize) || 20));
+  const offset = (page - 1) * pageSize;
+  try {
+    const userResult = await query(
+      `SELECT id, email, name, role, department, created_at, last_active, last_query_at FROM users WHERE id = $1`,
+      [userId]
+    );
+    if (!userResult.rows[0]) return res.status(404).json({ error: 'User not found' });
+
+    const [summaryResult, feedbackResult, historyResult] = await Promise.all([
+      query(`
+        SELECT
+          COUNT(*)::int AS total_queries,
+          COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '30 days')::int AS total_queries_30d,
+          COUNT(*) FILTER (WHERE was_escalated = true)::int AS total_escalations,
+          COUNT(*) FILTER (WHERE was_escalated = true AND created_at > NOW() - INTERVAL '30 days')::int AS escalations_30d,
+          ROUND(AVG(confidence_score) * 100) AS avg_confidence,
+          MAX(created_at) AS last_query_at
+        FROM queries WHERE user_id = $1
+      `, [userId]),
+      query(`
+        SELECT COUNT(*)::int AS feedback_count,
+          COUNT(*) FILTER (WHERE rating = 'up')::int AS thumbs_up,
+          COUNT(*) FILTER (WHERE rating = 'down')::int AS thumbs_down
+        FROM feedback WHERE user_id = $1
+      `, [userId]),
+      query(`
+        SELECT q.id, q.question, q.answer, q.confidence_score, q.was_escalated,
+               q.response_time_ms, q.created_at, f.rating AS feedback_rating, f.comment AS feedback_comment
+        FROM queries q
+        LEFT JOIN feedback f ON f.query_id = q.id AND f.user_id = q.user_id
+        WHERE q.user_id = $1
+        ORDER BY q.created_at DESC
+        LIMIT $2 OFFSET $3
+      `, [userId, pageSize, offset]),
+    ]);
+
+    res.json({
+      user: userResult.rows[0],
+      summary: {
+        totalQueries: summaryResult.rows[0].total_queries,
+        totalQueries30d: summaryResult.rows[0].total_queries_30d,
+        totalEscalations: summaryResult.rows[0].total_escalations,
+        escalations30d: summaryResult.rows[0].escalations_30d,
+        avgConfidence: summaryResult.rows[0].avg_confidence,
+        feedbackGiven: feedbackResult.rows[0].feedback_count,
+        thumbsUp: feedbackResult.rows[0].thumbs_up,
+        thumbsDown: feedbackResult.rows[0].thumbs_down,
+      },
+      queries: {
+        page, pageSize, total: summaryResult.rows[0].total_queries,
+        rows: historyResult.rows.map(r => ({
+          ...r,
+          feedback: r.feedback_rating ? { rating: r.feedback_rating, comment: r.feedback_comment } : null,
+        })),
+      },
+    });
+  } catch (error) {
+    logger.error({ error }, 'User activity fetch failed');
+    res.status(500).json({ error: 'Failed to load user activity' });
   }
 });
 
@@ -231,6 +306,17 @@ router.post('/users', async (req, res) => {
   }
 
   try {
+    const existingResult = await query('SELECT id, role FROM users WHERE email = $1', [email]);
+    const existingUser = existingResult.rows[0] || null;
+    const confirmAdminOverwrite = req.body.confirmAdminOverwrite === true;
+
+    if (existingUser && existingUser.role === 'admin' && !confirmAdminOverwrite) {
+      return res.status(403).json({
+        error: 'This email belongs to an existing admin account. Pass confirmAdminOverwrite: true to proceed.',
+        code: 'ADMIN_OVERWRITE_REQUIRES_CONFIRMATION',
+      });
+    }
+
     const passwordHash = await bcrypt.hash(password, 10);
     const result = await query(`
       INSERT INTO users (email, name, role, department, password_hash, first_login, last_active)
@@ -246,6 +332,29 @@ router.post('/users', async (req, res) => {
     `, [email, name, role, department, passwordHash]);
 
     logger.info({ adminId: req.user.id, demoUserId: result.rows[0].id, email }, 'Demo user created or reset');
+
+    if (existingUser) {
+      // An existing account's password was just reset — revoke any currently-valid
+      // JWTs for that user so a stolen/forgotten session can't outlive the reset.
+      try {
+        const redis = getRedis();
+        if (redis) {
+          await redis.set('session_revoked:' + existingUser.id, Date.now().toString(), 'EX', 86400);
+        }
+      } catch (redisError) {
+        logger.warn({ error: redisError, userId: existingUser.id }, 'Failed to revoke sessions after password reset');
+      }
+    }
+
+    logAudit({
+      userId: req.user.id,
+      action: existingUser ? 'admin.user.reset' : 'admin.user.create',
+      entityType: 'user',
+      entityId: result.rows[0].id,
+      metadata: { email, role },
+      ipAddress: req.ip,
+    }).catch(() => {});
+
     res.status(201).json({ user: result.rows[0] });
   } catch (error) {
     logger.error({ error, email }, 'Demo user create/reset failed');
@@ -287,6 +396,14 @@ router.delete('/documents/:id', async (req, res) => {
     );
     if (!result.rows[0]) return res.status(404).json({ error: 'Document not found' });
     logger.info({ documentId: req.params.id, adminId: req.user.id }, 'Document deleted');
+    logAudit({
+      userId: req.user.id,
+      action: 'admin.document.delete',
+      entityType: 'document',
+      entityId: req.params.id,
+      metadata: { filename: result.rows[0].filename },
+      ipAddress: req.ip,
+    }).catch(() => {});
     res.json({ success: true, deleted: result.rows[0] });
   } catch (error) {
     logger.error({ error }, 'Document delete failed');
@@ -352,7 +469,7 @@ router.get('/diagnostics', async (req, res) => {
   res.json({
     timestamp: new Date().toISOString(),
     config: {
-      confidenceThreshold: process.env.CONFIDENCE_THRESHOLD || '(not set — using 0.40 default)',
+      confidenceThreshold: process.env.CONFIDENCE_THRESHOLD || '(not set — using 0.25 default, capped at 0.35 max)',
       pineconeIndex: process.env.PINECONE_INDEX_NAME || '(not set — using siso-live-prod)',
     },
     pinecone: report.pinecone,
@@ -367,6 +484,14 @@ router.post('/documents/:id/reingest', async (req, res) => {
   try {
     const result = await reindexDocument(req.params.id);
     logger.info({ documentId: req.params.id, adminId: req.user.id }, 'Document re-indexed by admin');
+    logAudit({
+      userId: req.user.id,
+      action: 'admin.document.reingest',
+      entityType: 'document',
+      entityId: req.params.id,
+      metadata: {},
+      ipAddress: req.ip,
+    }).catch(() => {});
     res.json({ success: true, ...result });
   } catch (error) {
     logger.error({ error }, 'Document re-index failed');
@@ -374,7 +499,8 @@ router.post('/documents/:id/reingest', async (req, res) => {
   }
 });
 
-// POST /api/admin/upload — proxies to the upload service (multer handled there)
+// Proxies to the upload service (multer handled there). Note: the frontend
+// calls POST /api/upload/document directly, not through this admin mount.
 const uploadRouter = require('./upload.routes');
 router.use('/upload', uploadRouter);
 

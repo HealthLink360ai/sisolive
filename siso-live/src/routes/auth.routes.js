@@ -4,7 +4,13 @@ const bcrypt = require('bcryptjs');
 const rateLimit = require('express-rate-limit');
 const { query } = require('../config/database');
 const { logger } = require('../utils/logger');
+const { logAudit } = require('../utils/auditLog');
 const router = express.Router();
+
+// Fixed-cost dummy hash used so bcrypt.compare always runs (same bcrypt cost)
+// whether or not the email exists / has a password hash — prevents timing-based
+// user enumeration via the login endpoint (see fix #1 below).
+const DUMMY_HASH = bcrypt.hashSync('dummy-password-for-timing-safety', 10);
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -25,7 +31,21 @@ router.post('/login', loginLimiter, async (req, res) => {
     const result = await query('SELECT * FROM users WHERE email = $1', [email.toLowerCase()]);
     const user = result.rows[0];
 
-    if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+    // Always pay the bcrypt cost, whether or not the user exists (or has a
+    // NULL password_hash), so response timing can't be used to enumerate
+    // valid accounts. Compare against DUMMY_HASH when there's no real hash.
+    const passwordHash = user?.password_hash || DUMMY_HASH;
+    const passwordValid = await bcrypt.compare(password, passwordHash);
+
+    if (!user || !passwordValid) {
+      logAudit({
+        userId: user?.id || null,
+        action: 'auth.login.failure',
+        entityType: 'user',
+        entityId: user?.id || null,
+        metadata: { email: email.toLowerCase() },
+        ipAddress: req.ip,
+      }).catch(() => {});
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -39,6 +59,15 @@ router.post('/login', loginLimiter, async (req, res) => {
     await query('UPDATE users SET last_active = NOW(), first_login = false WHERE id = $1', [user.id]);
 
     logger.info({ userId: user.id, email: user.email }, 'User logged in');
+
+    logAudit({
+      userId: user.id,
+      action: 'auth.login.success',
+      entityType: 'user',
+      entityId: user.id,
+      metadata: { email: user.email },
+      ipAddress: req.ip,
+    }).catch(() => {});
 
     res.json({
       token,
@@ -54,6 +83,28 @@ router.post('/login', loginLimiter, async (req, res) => {
 router.post('/logout', (req, res) => {
   // JWTs are stateless — client deletes the token
   // For enhanced security, maintain a token blacklist in Redis
+
+  // Best-effort audit log. We use jwt.decode (not verify) so logout is
+  // still logged — and always succeeds — even if the token is expired
+  // or otherwise invalid; this endpoint doesn't gate on token validity.
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (token) {
+      const decoded = jwt.decode(token);
+      logAudit({
+        userId: decoded?.id || null,
+        action: 'auth.logout',
+        entityType: 'user',
+        entityId: decoded?.id || null,
+        metadata: { email: decoded?.email },
+        ipAddress: req.ip,
+      }).catch(() => {});
+    }
+  } catch (error) {
+    logger.warn({ error: error.message }, 'Failed to audit-log logout');
+  }
+
   res.json({ message: 'Logged out successfully' });
 });
 

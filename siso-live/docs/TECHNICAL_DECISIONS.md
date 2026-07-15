@@ -149,21 +149,23 @@ We chose serverless because:
 
 ---
 
-## Decision 7: The 90% Confidence Threshold
+## Decision 7: How SISO Live! Decides When to Escalate
 
-**What we chose:** Escalate to support when confidence is below 90%
+**What we chose:** Let Claude's own judgment be the primary escalation signal, with the confidence score acting only as a hard floor for the one case it's actually good at detecting: no relevant content at all.
 
-**Why this number specifically:**
+**Why not a simple confidence cutoff:**
 
-The 90% threshold was chosen as a starting point based on three considerations:
+Our original design escalated to the support desk whenever a numeric confidence score (from vector search similarity) fell below 90%. In practice, that score turned out to be a poor proxy for whether an answer was actually trustworthy — similarity scores vary a lot by domain and phrasing, and a "low" score often still pointed at a perfectly good, on-topic passage. Relying on it as a hard cutoff meant SISO Live! would escalate questions it was fully capable of answering.
 
-1. **User trust.** In a precision learning context, giving a user a wrong answer is worse than saying "I don't know." 90% means SISO Live! will only answer when it's quite sure — erring on the side of accuracy over coverage.
+The current mechanism works differently:
 
-2. **Knowledge base maturity.** At launch, the knowledge base is new. As more documents are uploaded and the system learns which questions it handles well, the escalation rate will naturally drop — without changing the threshold.
+1. **Zero chunks retrieved is the only hard, automatic escalation.** If document search (Pinecone) returns literally no matching passages — an empty or unavailable index — SISO Live! escalates immediately without calling Claude. In that case, the confidence threshold from `CONFIDENCE_THRESHOLD` applies, but the application code caps it at 0.35 maximum regardless of what's configured in `.env` (defaulting to 0.25 if unset). See `src/services/retrieval.service.js`.
 
-3. **It's adjustable.** The threshold is a single environment variable. If AbbVie finds the escalation rate is too high (meaning SISO Live! isn't answering enough questions), we lower it. Too many wrong answers? We raise it. This is one of the dials the admin dashboard makes visible.
+2. **Whenever chunks exist, Claude is the judge.** SISO Live! always attempts generation and hands Claude the retrieved passages with strict instructions to answer only from them. Claude escalates on its own, in its own output, only when the source excerpts are genuinely unrelated to the question — not based on any numeric score. This is enforced through explicit system-prompt rules (see `src/services/generation.service.js`) telling Claude that a single matching source is enough to answer, that foundational questions should basically never be escalated, and that escalation should be reserved for excerpts that are literally about a different topic.
 
-**What the data will tell us:** Within the first 30 days of usage, the admin feedback dashboard will show exactly which topics are being escalated most. Those become the priority list for new document uploads — directly improving the tool with zero model changes.
+3. **Why this is more accurate.** Claude can actually read and evaluate whether a passage answers the question; a cosine-similarity score cannot. Letting Claude make the call, with the retrieval score only guarding against the "nothing came back at all" case, means SISO Live! answers far more of the questions it's genuinely capable of answering while still protecting against fabricated answers when there's truly nothing relevant in the knowledge base.
+
+**What the data will tell us:** The admin feedback dashboard shows which topics get escalated (by either mechanism) most often. Those become the priority list for new document uploads — directly improving the tool with zero model changes.
 
 ---
 
@@ -206,10 +208,10 @@ This is a deliberate design choice rooted in learning science, not a technical l
 |---|---|---|
 | Authentication | JWT tokens, 24h expiry (configurable via JWT_EXPIRY) | Secure, stateless, works serverless |
 | Role separation | `user` vs `admin` roles | Regular users never see admin routes |
-| Rate limiting | 100 req/15min global, 10/15min auth | Prevents abuse and brute force |
+| Rate limiting | 10 req/min global chat limit, configurable (default 10) login attempts per 15 min | Prevents abuse and brute force |
 | HTTPS | Enforced in production | All data encrypted in transit |
-| Input validation | All user inputs sanitized | Prevents injection attacks |
-| Audit logging | Every action logged immutably | Compliance and forensics |
+| Input validation | Basic presence/length checks on request bodies; no formal schema validation library — flagged as a P1 gap | Prevents obviously malformed requests; stronger validation still needed |
+| Audit logging | Key actions (login, logout, document upload/delete/reingest, admin user management) are logged to a durable audit_log table | Compliance and forensics |
 | Budget guard | Hard spend cap | No runaway costs |
 | Data residency | Configurable by region | Can keep data in AbbVie-approved regions |
 

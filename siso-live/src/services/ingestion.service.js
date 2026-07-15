@@ -15,7 +15,6 @@
  */
 
 const fs = require('fs');
-const path = require('path');
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
 const { embedBatch, chunkText } = require('./embedding.service');
@@ -23,17 +22,49 @@ const { ensurePineconeIndex } = require('../config/pinecone');
 const { invalidateAnswerCache } = require('../config/redis');
 const { query } = require('../config/database');
 const { logger } = require('../utils/logger');
+const { estimateTokens } = require('../utils/tokenCounter');
+
+// Cohere embed-english-v3.0 pricing: ~$0.10 per 1M tokens.
+const COHERE_COST_PER_TOKEN = 0.10 / 1_000_000;
+
+/**
+ * Rough cost estimate for a batch of Cohere embed calls, folded into the same
+ * spend_tracking table (and monthly total) the admin dashboard already reads
+ * for Anthropic generation costs. Never throws — a tracking failure must not
+ * fail the ingestion pipeline.
+ */
+async function trackEmbeddingCost(chunks) {
+  const totalTokens = chunks.reduce((sum, chunk) => sum + estimateTokens(chunk), 0);
+  const cost = totalTokens * COHERE_COST_PER_TOKEN;
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  try {
+    await query(`
+      INSERT INTO spend_tracking (month, total_tokens_input, total_tokens_output, estimated_cost_usd, query_count)
+      VALUES ($1, $2, 0, $3, 1)
+      ON CONFLICT (month) DO UPDATE SET
+        total_tokens_input = spend_tracking.total_tokens_input + $2,
+        estimated_cost_usd = spend_tracking.estimated_cost_usd + $3,
+        query_count = spend_tracking.query_count + 1,
+        updated_at = NOW()
+    `, [currentMonth, totalTokens, cost]);
+  } catch (error) {
+    logger.error({ error }, 'Failed to update spend tracking for embedding cost');
+  }
+}
 
 /**
  * Main ingestion pipeline — called by the upload route
  */
-async function ingestDocument(filePath, documentId, filename, uploadedBy) {
+async function ingestDocument(filePath, documentId, filename, uploadedBy, verifiedFileType) {
   const startTime = Date.now();
   logger.info({ documentId, filename }, 'Starting document ingestion');
 
   try {
-    // Step 1: Extract text based on file type
-    const fileType = path.extname(filename).toLowerCase().slice(1);
+    // Step 1: Extract text based on file type. Use the server-verified fileType
+    // (derived from the checked MIME type / magic bytes at upload time) rather than
+    // re-deriving it from `filename`, which is the client-controlled originalname and
+    // must never be trusted for routing/extraction decisions.
+    const fileType = verifiedFileType;
     let rawText = '';
     logger.info({ documentId, fileType, filePath }, 'Step 1: extracting text');
 
@@ -66,6 +97,7 @@ async function ingestDocument(filePath, documentId, filename, uploadedBy) {
     logger.info({ documentId, chunkCount: chunks.length }, 'Step 3: embedding with Cohere');
     const embeddings = await embedBatch(chunks, 'search_document');
     logger.info({ documentId }, 'Step 3 complete: embeddings generated');
+    await trackEmbeddingCost(chunks);
 
     // Step 4: Store in Pinecone with metadata
     let index = null;
