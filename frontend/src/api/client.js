@@ -6,8 +6,8 @@
 
 export const API_BASE = '';
 
-const TOKEN_KEY = 'siso_token';
-const USER_KEY = 'siso_user';
+export const TOKEN_KEY = 'siso_token';
+export const USER_KEY = 'siso_user';
 
 export function getToken() {
   return localStorage.getItem(TOKEN_KEY);
