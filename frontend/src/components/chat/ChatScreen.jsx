@@ -342,7 +342,7 @@ export default function ChatScreen({ user, onAdmin, onLogout, onRewatch }) {
                           <div className="escalate-title">This is best handled by the SISO <em>support team</em>.</div>
                           <div className="escalate-desc">They'll provide a precise, verified answer. Typical response under 24 hours.</div>
                         </div>
-                        <a className="escalate-btn" href="mailto:siso-support@abbvie.com" style={{ textDecoration: 'none' }}>
+                        <a className="escalate-btn" href="mailto:supplierinclusionandsustainability@abbvie.com" style={{ textDecoration: 'none' }}>
                           Contact support
                           <div style={{ width: 10, height: 10 }}><Icons.arrow /></div>
                         </a>
