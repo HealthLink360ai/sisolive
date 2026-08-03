@@ -210,12 +210,20 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
    ============================================================ */
 .login-screen {
   display: grid;
-  grid-template-columns: minmax(420px, 1.55fr) minmax(380px, 1fr);
+  /* middle track is a dedicated stage for .login-bot — it never carries
+     hero text or card content, so the bot can never overlap either one,
+     at any viewport width. */
+  grid-template-columns: minmax(420px, 1.45fr) minmax(110px, 0.35fr) minmax(400px, 1.1fr);
   min-height: 100vh;
   height: auto;
   background: var(--paper-tinted);
   position: relative;
   overflow: auto;
+}
+@media (max-width: 1100px) {
+  /* bot is hidden below this width (see .login-bot) — collapse its
+     reserved column so the two remaining columns share the space */
+  .login-screen { grid-template-columns: minmax(420px, 1.55fr) minmax(380px, 1fr); }
 }
 .login-screen::before {
   /* soft orbit halo behind hero */
@@ -442,13 +450,15 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
   .login-hero-photo { display: none; }
 }
 
-/* ---- AbbVie bot · stands in the gap between hero text and the sign-in card ---- */
+/* ---- AbbVie bot · lives in its own grid column (see .login-screen), so it
+   is structurally unable to overlap hero text or the sign-in card at any
+   screen size — no magic-number positioning to drift out of place. ---- */
 .login-bot {
-  position: absolute;
+  grid-column: 2;
+  align-self: end;
+  justify-self: center;
   z-index: 4;
-  bottom: 0;
-  right: calc(43% - var(--login-bot-nudge, 5px));
-  width: min(clamp(220px, 26vw, 300px), 38vh);
+  width: min(clamp(260px, 24vw, 340px), 42vh);
   pointer-events: none;
   filter: drop-shadow(0 14px 16px rgba(11,19,32,0.18));
   animation: botFloat 5.5s ease-in-out infinite;
