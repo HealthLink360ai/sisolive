@@ -39,7 +39,7 @@ export default function ChatScreen({ user, onAdmin, onLogout, onRewatch }) {
 
   const [messages, setMessages] = useState([{
     id: 1, role: 'ai',
-    text: `Hello ${firstName}, I'm SISO Live!, your precision learning tool for supplier inclusion and sustainability. What would you like to explore today?`,
+    text: `Hello ${firstName}, I'm SISO Live!, your precision learning tool for Supplier Inclusion & Sustainability. What would you like to explore today?`,
     conf: null, source: null, nudge: null, feedback: null, showComment: false, comment: ''
   }]);
   const [input, setInput] = useState('');
@@ -171,7 +171,7 @@ export default function ChatScreen({ user, onAdmin, onLogout, onRewatch }) {
             <button className="new-conv-btn" onClick={() => {
               setMessages([{
                 id: Date.now(), role: 'ai',
-                text: `Hello ${firstName}, I'm SISO Live!, your precision learning tool for supplier inclusion and sustainability. What would you like to explore today?`,
+                text: `Hello ${firstName}, I'm SISO Live!, your precision learning tool for Supplier Inclusion & Sustainability. What would you like to explore today?`,
                 conf: null, source: null, nudge: null, feedback: null, showComment: false, comment: ''
               }]);
               setInput('');

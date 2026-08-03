@@ -2,7 +2,7 @@
 
 ## What SISO Live Is
 
-SISO Live is a precision learning tool for AbbVie supplier inclusion and sustainability content. It lets employees ask natural-language questions and receive source-grounded answers from approved SISO materials.
+SISO Live is a precision learning tool for AbbVie Supplier Inclusion & Sustainability content. It lets employees ask natural-language questions and receive source-grounded answers from approved SISO materials.
 
 The experience is designed for controlled pilot use: learners get guided answers, admins can review activity and knowledge gaps, and the team can improve the knowledge base through an auditable content review loop.
 
@@ -16,7 +16,7 @@ Login credentials should be shared separately through an approved secure channel
 
 ## What Is Ready For Client Review
 
-- Learner chat experience for supplier inclusion and sustainability questions.
+- Learner chat experience for Supplier Inclusion & Sustainability questions.
 - Source-grounded answer cards with confidence and source attribution.
 - Feedback capture for helpful/not helpful responses.
 - Admin dashboard with activity, answer demand, needs-review signals, and usage metrics.
@@ -59,7 +59,7 @@ Remaining enterprise work includes:
 
 ## Recommended Demo Message
 
-"SISO Live helps AbbVie teams learn supplier inclusion and sustainability guidance faster by searching approved source materials and returning a concise, source-grounded answer. The tool also captures feedback and knowledge gaps, so the SISO team can continuously improve the underlying content through a controlled review process."
+"SISO Live helps AbbVie teams learn Supplier Inclusion & Sustainability guidance faster by searching approved source materials and returning a concise, source-grounded answer. The tool also captures feedback and knowledge gaps, so the SISO team can continuously improve the underlying content through a controlled review process."
 
 ## First-Time Demo Flow
 

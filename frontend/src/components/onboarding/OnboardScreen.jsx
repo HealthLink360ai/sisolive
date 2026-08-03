@@ -24,7 +24,7 @@ export default function OnboardScreen({ user, onEnter }) {
             <span className="step">Orientation</span>
             Before you begin
           </div>
-          <h1 className="onboard-h">Supplier inclusion and sustainability: <br /><em>What it means at AbbVie.</em></h1>
+          <h1 className="onboard-h">Supplier Inclusion & Sustainability: <br /><em>What it means at AbbVie.</em></h1>
         </div>
 
         <div className="onboard-video-hero">
@@ -33,7 +33,7 @@ export default function OnboardScreen({ user, onEnter }) {
               src={VIMEO_EMBED}
               allow="autoplay; fullscreen; picture-in-picture"
               allowFullScreen
-              title="SISO Live! Supplier Inclusion and Sustainability Overview"
+              title="SISO Live! Supplier Inclusion & Sustainability Overview"
             />
           </div>
           <div className="onboard-video-caption">
@@ -53,7 +53,7 @@ export default function OnboardScreen({ user, onEnter }) {
             num="STEP 02"
             label="Sustainability"
             heading="Responsible sourcing beyond the bottom line"
-            body="AbbVie's sustainability goals focus on environmental stewardship: reducing carbon emissions, water usage, and waste, while measuring the social and governance impact of our supply chain decisions. Together, supplier inclusion and sustainability form the foundation of how AbbVie creates long-term value."
+            body="AbbVie's sustainability goals focus on environmental stewardship: reducing carbon emissions, water usage, and waste, while measuring the social and governance impact of our supply chain decisions. Together, Supplier Inclusion & Sustainability form the foundation of how AbbVie creates long-term value."
           />
           <OnboardStepCard
             num="STEP 03"
