@@ -1,8 +1,7 @@
 import Icons from '../icons/Icons.jsx';
 import OnboardStepCard from './OnboardStepCard';
 
-// Ported verbatim from index.html (~line 3003)
-const VIMEO_EMBED = 'https://player.vimeo.com/video/1203654369?h=5636fcee24&title=0&byline=0&portrait=0';
+const VIMEO_EMBED = 'https://player.vimeo.com/video/1215281143?title=0&byline=0&portrait=0&badge=0&controls=0';
 
 // Ported verbatim from index.html (~lines 3027-3097)
 export default function OnboardScreen({ user, onEnter }) {
