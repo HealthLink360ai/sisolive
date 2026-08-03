@@ -22,6 +22,7 @@ const rateLimiter = rateLimit({
   max: parseInt(process.env.MAX_QUERIES_PER_MINUTE) || 10,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => req.user?.role === 'admin',
   keyGenerator: (req) => req.user?.id || req.ip, // Limit per user, not per IP
   handler: (req, res) => {
     logger.warn({ userId: req.user?.id }, 'Rate limit exceeded');
@@ -37,6 +38,7 @@ const rateLimiter = rateLimit({
 async function checkDailyLimit(req, res, next) {
   const userId = req.user?.id;
   if (!userId) return next();
+  if (req.user?.role === 'admin') return next();
 
   try {
     const redis = getRedis();
@@ -68,9 +70,14 @@ async function checkDailyLimit(req, res, next) {
     req.dailyQueryCount = current;
     next();
   } catch (error) {
-    // If Redis is down, don't block the user — just log and continue
-    logger.error({ error }, 'Rate limit check failed, allowing request');
-    next();
+    // Fail closed: if Redis is down we can't verify the daily cap, so don't
+    // let the request through unchecked — that would defeat the whole
+    // limit. A brief 503 is a better trade-off than unbounded usage.
+    logger.error({ error }, 'Daily limit check failed — blocking request until service recovers');
+    res.status(503).json({
+      error: 'Service temporarily unavailable. Please try again shortly.',
+      code: 'DAILY_LIMIT_CHECK_UNAVAILABLE',
+    });
   }
 }
 

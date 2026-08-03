@@ -2,5 +2,11 @@ node_modules/
 siso-live/node_modules/
 .env
 siso-live/.env
+**/.env
 *.log
 extracted/
+.DS_Store
+*.tar.gz
+coverage/
+frontend/dist/
+frontend/node_modules/

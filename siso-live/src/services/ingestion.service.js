@@ -15,29 +15,63 @@
  */
 
 const fs = require('fs');
-const path = require('path');
 const pdfParse = require('pdf-parse');
+const mammoth = require('mammoth');
 const { embedBatch, chunkText } = require('./embedding.service');
-const { getPineconeIndex } = require('../config/pinecone');
+const { ensurePineconeIndex } = require('../config/pinecone');
 const { invalidateAnswerCache } = require('../config/redis');
 const { query } = require('../config/database');
 const { logger } = require('../utils/logger');
+const { estimateTokens } = require('../utils/tokenCounter');
+
+// Cohere embed-english-v3.0 pricing: ~$0.10 per 1M tokens.
+const COHERE_COST_PER_TOKEN = 0.10 / 1_000_000;
+
+/**
+ * Rough cost estimate for a batch of Cohere embed calls, folded into the same
+ * spend_tracking table (and monthly total) the admin dashboard already reads
+ * for Anthropic generation costs. Never throws — a tracking failure must not
+ * fail the ingestion pipeline.
+ */
+async function trackEmbeddingCost(chunks) {
+  const totalTokens = chunks.reduce((sum, chunk) => sum + estimateTokens(chunk), 0);
+  const cost = totalTokens * COHERE_COST_PER_TOKEN;
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  try {
+    await query(`
+      INSERT INTO spend_tracking (month, total_tokens_input, total_tokens_output, estimated_cost_usd, query_count)
+      VALUES ($1, $2, 0, $3, 1)
+      ON CONFLICT (month) DO UPDATE SET
+        total_tokens_input = spend_tracking.total_tokens_input + $2,
+        estimated_cost_usd = spend_tracking.estimated_cost_usd + $3,
+        query_count = spend_tracking.query_count + 1,
+        updated_at = NOW()
+    `, [currentMonth, totalTokens, cost]);
+  } catch (error) {
+    logger.error({ error }, 'Failed to update spend tracking for embedding cost');
+  }
+}
 
 /**
  * Main ingestion pipeline — called by the upload route
  */
-async function ingestDocument(filePath, documentId, filename, uploadedBy) {
+async function ingestDocument(filePath, documentId, filename, uploadedBy, verifiedFileType) {
   const startTime = Date.now();
   logger.info({ documentId, filename }, 'Starting document ingestion');
 
   try {
-    // Step 1: Extract text based on file type
-    const fileType = path.extname(filename).toLowerCase().slice(1);
+    // Step 1: Extract text based on file type. Use the server-verified fileType
+    // (derived from the checked MIME type / magic bytes at upload time) rather than
+    // re-deriving it from `filename`, which is the client-controlled originalname and
+    // must never be trusted for routing/extraction decisions.
+    const fileType = verifiedFileType;
     let rawText = '';
     logger.info({ documentId, fileType, filePath }, 'Step 1: extracting text');
 
     if (fileType === 'pdf') {
       rawText = await extractPdfText(filePath);
+    } else if (fileType === 'docx' || fileType === 'doc') {
+      rawText = await extractDocxText(filePath);
     } else if (fileType === 'csv') {
       rawText = await extractCsvText(filePath);
     } else if (fileType === 'txt') {
@@ -63,10 +97,13 @@ async function ingestDocument(filePath, documentId, filename, uploadedBy) {
     logger.info({ documentId, chunkCount: chunks.length }, 'Step 3: embedding with Cohere');
     const embeddings = await embedBatch(chunks, 'search_document');
     logger.info({ documentId }, 'Step 3 complete: embeddings generated');
+    await trackEmbeddingCost(chunks);
 
     // Step 4: Store in Pinecone with metadata
-    const index = getPineconeIndex();
-    if (!index) {
+    let index = null;
+    try {
+      index = await ensurePineconeIndex();
+    } catch (error) {
       logger.warn({ documentId }, 'Pinecone unavailable — raw text saved, no vectors stored. Re-index from admin panel.');
       await query(`UPDATE documents SET status = 'active', chunk_count = $1, processed_at = NOW(), has_vectors = false WHERE id = $2`, [chunks.length, documentId]);
       return { success: true, chunkCount: chunks.length, processingTimeMs: Date.now() - startTime, vectorsStored: false };
@@ -191,14 +228,58 @@ async function extractPdfTextWithClaude(dataBuffer, filePath) {
   return text;
 }
 
+async function extractDocxText(filePath) {
+  const result = await mammoth.extractRawText({ path: filePath });
+  const text = result.value || '';
+  if (!text.trim()) {
+    throw new Error('No text could be extracted from this Word document. It may be empty or corrupted.');
+  }
+  logger.info({ filePath, chars: text.length }, 'DOCX text extracted via mammoth');
+  return text;
+}
+
+// Parses a single CSV line into fields, correctly handling quoted fields
+// that contain commas and escaped "" quotes — a plain split(',') mangles those.
+function parseCsvLine(line) {
+  const fields = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+
+    if (inQuotes) {
+      if (char === '"') {
+        if (line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        current += char;
+      }
+    } else if (char === '"') {
+      inQuotes = true;
+    } else if (char === ',') {
+      fields.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  fields.push(current.trim());
+  return fields;
+}
+
 async function extractCsvText(filePath) {
   // Convert CSV rows to readable sentences for better embedding
   const content = fs.readFileSync(filePath, 'utf8');
   const lines = content.split('\n').filter(l => l.trim());
-  const headers = lines[0].split(',').map(h => h.trim());
+  const headers = parseCsvLine(lines[0]);
 
   return lines.slice(1).map(line => {
-    const values = line.split(',').map(v => v.trim());
+    const values = parseCsvLine(line);
     return headers.map((h, i) => `${h}: ${values[i] || ''}`).join('. ');
   }).join('\n');
 }
@@ -223,8 +304,7 @@ async function reindexDocument(documentId) {
     const chunks = chunkText(doc.raw_text);
     const embeddings = await embedBatch(chunks, 'search_document');
 
-    const index = getPineconeIndex();
-    if (!index) throw new Error('Pinecone is not connected — check PINECONE_API_KEY in Vercel settings');
+    const index = await ensurePineconeIndex();
 
     // Delete old vectors for this document
     const oldCount = doc.chunk_count || 0;

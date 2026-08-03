@@ -45,6 +45,6 @@ fi
 echo "✓ All required API keys present"
 echo ""
 echo "Starting SISO Live! backend on http://localhost:3001 ..."
-echo "Open siso-live-FINAL.html in your browser once the backend is running."
+echo "Open index.html in your browser once the backend is running."
 echo ""
 npm run dev

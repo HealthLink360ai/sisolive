@@ -11,7 +11,7 @@
  * how confident it is that those passages actually answer the question.
  */
 
-const { getPineconeIndex, initPinecone } = require('../config/pinecone');
+const { ensurePineconeIndex } = require('../config/pinecone');
 const { embedText } = require('./embedding.service');
 const { logger } = require('../utils/logger');
 
@@ -21,7 +21,7 @@ const envThreshold = parseFloat(process.env.CONFIDENCE_THRESHOLD);
 const CONFIDENCE_THRESHOLD = (!isNaN(envThreshold) && envThreshold > 0)
   ? Math.min(envThreshold, 0.35)
   : 0.25;
-const MAX_CHUNKS = parseInt(process.env.MAX_CHUNKS_TO_RETRIEVE) || 5;
+const MAX_CHUNKS = parseInt(process.env.MAX_CHUNKS_TO_RETRIEVE) || 3;
 
 /**
  * Search for relevant document chunks given a user question
@@ -40,20 +40,13 @@ async function retrieveRelevantChunks(question) {
   }
 
   // Step 2: Search Pinecone for similar vectors.
-  // getPineconeIndex() may be null on a Vercel cold start where the first request
-  // races against async startup — attempt on-demand init before giving up.
-  let index = getPineconeIndex();
-  if (!index) {
-    try {
-      logger.info('Pinecone not yet initialized — attempting on-demand init');
-      index = await initPinecone();
-    } catch (err) {
-      logger.warn({ err }, 'Pinecone on-demand init failed — returning empty retrieval result');
-      return { chunks: [], confidence: 0, shouldEscalate: true, topScore: 0 };
-    }
-  }
-  if (!index) {
-    logger.warn('Pinecone unavailable after on-demand init — returning empty retrieval result');
+  // Vercel cold starts may hit retrieval before startup initialization completes.
+  // Initialize on demand and degrade to escalation if Pinecone is unavailable.
+  let index;
+  try {
+    index = await ensurePineconeIndex();
+  } catch (err) {
+    logger.warn({ err }, 'Pinecone unavailable — returning empty retrieval result');
     return { chunks: [], confidence: 0, shouldEscalate: true, topScore: 0 };
   }
   let searchResults;
@@ -71,7 +64,7 @@ async function retrieveRelevantChunks(question) {
   const matches = searchResults.matches || [];
 
   if (matches.length === 0) {
-    logger.info({ question: question.slice(0, 100) }, 'No matching chunks found');
+    logger.info({ questionLength: question.length }, 'No matching chunks found');
     return {
       chunks: [],
       confidence: 0,
@@ -100,7 +93,7 @@ async function retrieveRelevantChunks(question) {
   const retrievalTime = Date.now() - startTime;
 
   logger.info({
-    question: question.slice(0, 100),
+    questionLength: question.length,
     topScore: topScore.toFixed(4),
     confidence: `${(confidence * 100).toFixed(1)}%`,
     shouldEscalate,

@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>SISO Live! · Precision Learning</title>
-<link rel="icon" type="image/png" href="assets/untitled-design.png" />
+<link rel="icon" type="image/jpeg" href="assets/abbvie-flavicon.jpg" />
 <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
 <script src="https://unpkg.com/@babel/standalone@7.27.6/babel.min.js"></script>
@@ -224,11 +224,12 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
    ============================================================ */
 .login-screen {
   display: grid;
-  grid-template-columns: 1.55fr 1fr;
-  height: 100vh;
+  grid-template-columns: minmax(420px, 1.55fr) minmax(380px, 1fr);
+  min-height: 100vh;
+  height: auto;
   background: var(--paper-tinted);
   position: relative;
-  overflow: hidden;
+  overflow: auto;
 }
 .login-screen::before {
   /* soft orbit halo behind hero */
@@ -284,7 +285,7 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
   display: flex; align-items: center; gap: 14px;
 }
 .login-lockup .org-mark {
-  height: 22px;
+  height: 44px;
   display: flex; align-items: center;
   padding-right: 4px;
 }
@@ -292,10 +293,10 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
   height: 100%;
   width: auto;
   display: block;
-  filter: invert(1);
+  mix-blend-mode: multiply;
 }
 .login-lockup .lockup-sep {
-  width: 1px; height: 26px;
+  width: 1px; height: 34px;
   background: var(--rule-2);
 }
 .login-lockup .product {
@@ -309,33 +310,33 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 12px rgba(21,183,154,0.30);
 }
 .login-lockup .product .wm {
-  font-size: 22px; font-weight: 600; letter-spacing: -0.01em;
+  font-size: 24px; font-weight: 600; letter-spacing: -0.01em;
   display: inline-flex; align-items: baseline; gap: 4px;
 }
 .login-lockup .product .wm em {
   font-family: var(--serif); font-style: italic; font-weight: 400;
-  font-size: 24px; color: var(--teal-deep); margin-left: 1px;
+  font-size: 26px; color: var(--teal-deep); margin-left: 1px;
 }
 
 .login-help {
-  font-family: var(--sans); font-size: 13px;
-  color: var(--text-3);
-  display: inline-flex; align-items: baseline; gap: 8px;
+  font-family: var(--sans); font-size: 12.5px;
+  color: var(--text-on-ink-3);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 14px 8px 0;
   white-space: nowrap;
-  flex-shrink: 0;
 }
 .login-help a {
-  color: var(--text);
+  color: var(--text-on-ink-2);
   text-decoration: none;
-  border-bottom: 1px dotted var(--rule-strong);
+  border-bottom: 1px dotted rgba(244,241,234,0.30);
   font-weight: 500;
 }
-.login-help a:hover { border-bottom-color: var(--teal-deep); color: var(--teal-deep); }
+.login-help a:hover { border-bottom-color: var(--teal); color: var(--teal); }
 
 .login-hero {
-  align-self: start;
+  align-self: center;
   max-width: 560px;
-  padding-top: 28px;
+  padding-top: 0;
 }
 .login-pill {
   display: inline-flex; align-items: center; gap: 10px;
@@ -358,7 +359,7 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
 }
 .login-headline {
   font-family: var(--sans);
-  font-size: clamp(42px, 5.4vw, 58px);
+  font-size: clamp(48px, 5.8vw, 66px);
   font-weight: 400;
   line-height: 1.06;
   letter-spacing: -0.035em;
@@ -374,10 +375,10 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
   letter-spacing: -0.02em;
 }
 .login-sub {
-  font-size: 14px;
-  line-height: 1.55;
+  font-size: 17px;
+  line-height: 1.6;
   color: var(--text-2);
-  max-width: 300px;
+  max-width: 460px;
   font-weight: 400;
   margin-bottom: 40px;
 }
@@ -391,21 +392,21 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
 }
 .login-feat { min-width: 0; }
 .login-feat .ic {
-  width: 38px; height: 38px; border-radius: 50%;
+  width: 46px; height: 46px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   margin-bottom: 14px;
   background: var(--paper-3);
   border: 1px solid var(--rule);
 }
-.login-feat.f-1 .ic { background: rgba(46,140,91,0.10); color: var(--positive); border-color: rgba(46,140,91,0.20); }
-.login-feat.f-2 .ic { background: rgba(150,124,210,0.12); color: #6B5BB0; border-color: rgba(107,91,176,0.22); }
-.login-feat.f-3 .ic { background: rgba(45,91,255,0.10); color: var(--signal); border-color: rgba(45,91,255,0.20); }
+.login-feat.f-1 .ic { background: rgba(13,27,42,0.07); border-color: rgba(13,27,42,0.14); }
+.login-feat.f-2 .ic { background: rgba(232,139,66,0.10); border-color: rgba(232,139,66,0.22); }
+.login-feat.f-3 .ic { background: rgba(21,183,154,0.10); border-color: rgba(21,183,154,0.22); }
 .login-feat h5 {
-  font-size: 14px; font-weight: 600; letter-spacing: -0.01em;
-  color: var(--ink); margin-bottom: 4px;
+  font-size: 15px; font-weight: 600; letter-spacing: -0.01em;
+  color: var(--ink); margin-bottom: 6px;
 }
 .login-feat p {
-  font-size: 12.5px; color: var(--text-2); line-height: 1.5;
+  font-size: 14px; color: var(--text-2); line-height: 1.55;
 }
 
 .login-left-foot {
@@ -472,7 +473,7 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-9px); }
 }
-@media (max-width: 640px) {
+@media (max-width: 1100px) {
   .login-bot { display: none; }
 }
 
@@ -629,6 +630,14 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
   width: 100%;
 }
 .btn-sso:hover { border-color: rgba(244,241,234,0.32); background: rgba(244,241,234,0.04); }
+.btn-sso:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+.btn-sso:disabled:hover {
+  border-color: rgba(244,241,234,0.16);
+  background: transparent;
+}
 
 .login-error {
   font-size: 13px;
@@ -670,7 +679,152 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
   display: flex; flex-direction: column; align-items: center;
   padding: 48px 32px;
 }
-.onboard-inner { max-width: 780px; width: 100%; }
+.onboard-inner { max-width: 1080px; width: 100%; }
+.onboard-video-hero {
+  margin-bottom: 40px;
+}
+.onboard-video-embed {
+  border-radius: 14px;
+  overflow: hidden;
+  aspect-ratio: 16/9;
+  background: var(--ink);
+  box-shadow: 0 8px 32px rgba(11,19,32,0.18);
+  margin-bottom: 12px;
+}
+.onboard-video-embed iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+.onboard-video-caption {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0 6px;
+}
+.onboard-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 36px;
+  padding-top: 8px;
+}
+/* flip card outer wrapper */
+.onboard-step-wrapper {
+  perspective: 1200px;
+  cursor: pointer;
+  min-height: 280px;
+  border-radius: 18px;
+}
+.onboard-step-inner {
+  position: relative;
+  width: 100%;
+  min-height: 280px;
+  transition: transform 0.58s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+}
+.onboard-step-wrapper.flipped .onboard-step-inner {
+  transform: rotateY(180deg);
+}
+/* shared face styles */
+.onboard-step {
+  position: absolute;
+  inset: 0;
+  padding: 30px 28px;
+  background: var(--ink);
+  border-radius: 18px;
+  border: 1px solid rgba(244,241,234,0.06);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.04) inset,
+    0 16px 40px -12px rgba(11,19,32,0.40);
+  display: flex;
+  flex-direction: column;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease;
+}
+.onboard-step-wrapper:not(.flipped):hover .onboard-step-front,
+.onboard-step-wrapper.flipped:hover .onboard-step-back {
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.04) inset,
+    0 24px 56px -16px rgba(11,19,32,0.55),
+    0 0 0 1px rgba(21,183,154,0.28);
+}
+.onboard-step-back { transform: rotateY(180deg); }
+/* ambient glow */
+.onboard-step::before {
+  content: '';
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 180px; height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(21,183,154,0.13) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+.onboard-step-num {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--teal);
+  margin-bottom: 22px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative; z-index: 1;
+}
+.onboard-step-num::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(244,241,234,0.10);
+}
+.onboard-step-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--teal);
+  font-weight: 600;
+  margin-bottom: 8px;
+  opacity: 0.65;
+  position: relative; z-index: 1;
+}
+.onboard-step-heading {
+  font-size: 19px;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  color: var(--text-on-ink);
+  line-height: 1.25;
+  flex: 1;
+  position: relative; z-index: 1;
+}
+.onboard-step-body {
+  font-size: 14px;
+  color: var(--text-on-ink-2);
+  line-height: 1.65;
+  flex: 1;
+  position: relative; z-index: 1;
+}
+.onboard-step-hint {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  color: var(--teal);
+  opacity: 0.6;
+  margin-top: 18px;
+  position: relative; z-index: 1;
+}
+@media (max-width: 700px) {
+  .onboard-steps { grid-template-columns: 1fr; gap: 20px; }
+}
 .onboard-top {
   display: flex; justify-content: space-between; align-items: center;
   margin-bottom: 64px;
@@ -838,7 +992,7 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
 }
 .onboard-card .ic {
   width: 36px; height: 36px; border-radius: 9px;
-  background: var(--ink); color: var(--teal);
+  background: var(--abbvie-blue); color: var(--teal);
   display: flex; align-items: center; justify-content: center;
   margin-bottom: 18px;
 }
@@ -857,11 +1011,51 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
 .onboard-cta-meta { display: flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 11px; color: var(--text-3); }
 .onboard-cta-meta b { font-weight: 500; color: var(--text); }
 
+/* ---- Video modal overlay ---- */
+.video-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(11,19,32,0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+.video-modal-wrap {
+  position: relative;
+  width: min(900px, 92vw);
+  aspect-ratio: 16/9;
+}
+.video-modal-wrap iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 14px;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.55);
+}
+.video-modal-close {
+  position: absolute;
+  top: -44px;
+  right: 0;
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.video-modal-close:hover { background: rgba(255,255,255,0.22); }
+
 /* ============================================================
    CHAT
    ============================================================ */
 .app-shell { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-.chat-screen { display: grid; grid-template-columns: 272px 1fr 300px; flex: 1; overflow: hidden; background: var(--paper); }
+.chat-screen { display: grid; grid-template-columns: 300px 1fr 300px; flex: 1; overflow: hidden; background: var(--paper); }
 .sidebar {
   border-right: 1px solid var(--rule);
   display: flex; flex-direction: column;
@@ -939,14 +1133,14 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
 
 .sidebar-chips { display: flex; flex-direction: column; gap: 6px; padding: 4px 0; }
 .sidebar-chip {
-  padding: 10px 12px;
+  padding: 12px 14px;
   border: 1px solid var(--rule);
   background: var(--paper-3);
   border-radius: 10px;
-  font-size: 12.5px;
+  font-size: 14px;
   color: var(--text);
   cursor: pointer;
-  line-height: 1.45;
+  line-height: 1.5;
   transition: background 0.12s, border-color 0.12s, transform 0.12s;
   display: flex; gap: 8px; align-items: flex-start;
   letter-spacing: -0.005em;
@@ -1070,14 +1264,52 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
   box-shadow: var(--shadow-card);
 }
 .ai-card-body {
-  padding: 18px 20px 16px;
+  padding: 20px 22px 18px;
   font-size: 14.5px;
-  line-height: 1.65;
+  line-height: 1.7;
   color: var(--text);
   letter-spacing: -0.005em;
 }
-.ai-card-body.low-conf { color: var(--text-2); }
+.ai-card-body.parsed { display: flex; flex-direction: column; gap: 13px; padding: 20px 22px 18px; }
+.ai-card-body.low-conf { color: var(--text-2); font-size: 14.5px; line-height: 1.7; }
 .ai-card-body strong { font-weight: 600; }
+.answer-p { font-size: 14.5px; line-height: 1.7; color: var(--text); letter-spacing: -0.005em; margin: 0; }
+.answer-p + .answer-p { margin-top: 2px; }
+.answer-example {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text);
+  padding: 11px 14px 11px 15px;
+  background: rgba(21,183,154,0.06);
+  border-left: 2.5px solid var(--teal);
+  border-radius: 0 8px 8px 0;
+  letter-spacing: -0.005em;
+}
+.answer-example strong { font-weight: 600; }
+.answer-takeaway {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 12px 15px;
+  background: linear-gradient(135deg, rgba(21,183,154,0.08) 0%, rgba(21,183,154,0.04) 100%);
+  border-radius: 10px;
+  border: 1px solid rgba(21,183,154,0.20);
+}
+.answer-takeaway-label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--teal-deep);
+}
+.answer-takeaway-text {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--ink);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
 .ai-card-foot {
   border-top: 1px solid var(--rule);
   padding: 10px 14px 10px 20px;
@@ -1339,7 +1571,7 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
   border: 1px solid var(--rule);
   box-shadow: var(--shadow-card);
   overflow: hidden;
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 3 / 4;
   transition: filter 0.25s ease;
 }
 .assistant-stage.thinking {
@@ -2336,14 +2568,23 @@ input::placeholder, textarea::placeholder { color: var(--text-3); }
 <script type="text/babel">
 /* ============================================================
    SISO LIVE! · PRODUCTION APP
-   API_BASE → https://sisolive.vercel.app
+   API_BASE → same-origin /api proxy
    ============================================================ */
 
-const API_BASE = 'https://sisolive.vercel.app';
+const API_BASE = '';
 const TOKEN_KEY = 'siso_token';
 const USER_KEY  = 'siso_user';
 
 function getToken() { return localStorage.getItem(TOKEN_KEY); }
+function clearStoredSession() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
+}
+
+// Global 401 handler — set by App on mount, called by any API that gets Unauthorized
+let _onUnauthorized = null;
+function setOnUnauthorized(fn) { _onUnauthorized = fn; }
+function dispatchUnauthorized() { if (_onUnauthorized) _onUnauthorized(); }
 
 const AuthAPI = {
   async login(email, password) {
@@ -2355,16 +2596,24 @@ const AuthAPI = {
     const d = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(d.error || 'Login failed');
     return d;
+  },
+  async validate() {
+    const r = await fetch(`${API_BASE}/api/auth/validate`, {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+    if (!r.ok) throw new Error('Session invalid');
+    return r.json();
   }
 };
 
 const ChatAPI = {
   async query(question, conversationHistory) {
-    const r = await fetch(`${API_BASE}/api/chat`, {
+    const r = await fetch(`${API_BASE}/api/chat/query`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
       body: JSON.stringify({ question, conversationHistory: conversationHistory || [] })
     });
+    if (r.status === 401) { dispatchUnauthorized(); throw new Error('Session expired. Please sign in again.'); }
     const d = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(d.error || 'Query failed');
     return d;
@@ -2373,8 +2622,9 @@ const ChatAPI = {
     const r = await fetch(`${API_BASE}/api/chat/feedback`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
-      body: JSON.stringify({ messageId, type, comment })
+      body: JSON.stringify({ queryId: messageId, rating: type, comment })
     });
+    if (r.status === 401) { dispatchUnauthorized(); return; }
     if (!r.ok) throw new Error('Feedback failed');
     return r.json();
   }
@@ -2382,9 +2632,10 @@ const ChatAPI = {
 
 const AdminAPI = {
   async getStats() {
-    const r = await fetch(`${API_BASE}/api/admin/stats`, {
+    const r = await fetch(`${API_BASE}/api/admin/dashboard`, {
       headers: { 'Authorization': `Bearer ${getToken()}` }
     });
+    if (r.status === 401) { dispatchUnauthorized(); throw new Error('Session expired. Please sign in again.'); }
     if (!r.ok) throw new Error('Failed to load stats');
     return r.json();
   },
@@ -2392,18 +2643,20 @@ const AdminAPI = {
     const r = await fetch(`${API_BASE}/api/admin/users`, {
       headers: { 'Authorization': `Bearer ${getToken()}` }
     });
+    if (r.status === 401) { dispatchUnauthorized(); throw new Error('Session expired. Please sign in again.'); }
     if (!r.ok) throw new Error('Failed to load users');
     return r.json();
   },
   async uploadDocument(file) {
     const formData = new FormData();
     formData.append('file', file);
-    const r = await fetch(`${API_BASE}/api/admin/upload`, {
+    const r = await fetch(`${API_BASE}/api/upload/document`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${getToken()}` },
       body: formData
     });
     const d = await r.json().catch(() => ({}));
+    if (r.status === 401) { dispatchUnauthorized(); throw new Error('Session expired. Please sign in again.'); }
     if (!r.ok) throw new Error(d.error || 'Upload failed');
     return d;
   },
@@ -2411,6 +2664,7 @@ const AdminAPI = {
     const r = await fetch(`${API_BASE}/api/admin/documents`, {
       headers: { 'Authorization': `Bearer ${getToken()}` }
     });
+    if (r.status === 401) { dispatchUnauthorized(); throw new Error('Session expired. Please sign in again.'); }
     if (!r.ok) throw new Error('Failed to load documents');
     return r.json();
   },
@@ -2419,6 +2673,7 @@ const AdminAPI = {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${getToken()}` }
     });
+    if (r.status === 401) { dispatchUnauthorized(); throw new Error('Session expired. Please sign in again.'); }
     if (!r.ok) throw new Error('Failed to delete document');
     return r.json();
   },
@@ -2438,9 +2693,91 @@ const AdminAPI = {
     if (!r.ok) throw new Error('Failed to run diagnostics');
     return r.json();
   },
+  async getEscalations() {
+    const r = await fetch(`${API_BASE}/api/admin/analytics/escalations`, {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+    if (!r.ok) throw new Error('Failed to load escalations');
+    return r.json();
+  },
+  async getFeedback() {
+    const r = await fetch(`${API_BASE}/api/admin/analytics/feedback`, {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+    if (!r.ok) throw new Error('Failed to load feedback');
+    return r.json();
+  },
 };
 
 const { useState, useRef, useEffect } = React;
+
+// ---- Answer text parsing ----
+function cleanSourceName(raw) {
+  if (!raw) return null;
+  return raw
+    .replace(/\.(pdf|docx|doc|txt|csv|pptx|xlsx)$/i, '')
+    .replace(/[_-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function parseAnswer(text) {
+  if (!text) return { paragraphs: [], takeaway: null, sourceInText: null };
+
+  // Extract inline Source: line that Claude writes at the end
+  const sourceRx = /(?:^|\n)Source:\s*(.+?)(?:\n|$)/i;
+  const sourceMatch = text.match(sourceRx);
+  const sourceInText = sourceMatch ? sourceMatch[1].trim() : null;
+  let body = sourceMatch ? text.replace(sourceMatch[0], '').trim() : text;
+
+  // Split "The bottom line:" off — it always appears as its own sentence
+  const bottomRx = /(?:^|\n)(The bottom line:\s*.+?)(?:\n|$)/i;
+  const bottomMatch = body.match(bottomRx);
+  let takeaway = null;
+  if (bottomMatch) {
+    const raw = bottomMatch[1].replace(/^the bottom line:\s*/i, '').trim();
+    takeaway = raw.charAt(0).toUpperCase() + raw.slice(1);
+    body = body.replace(bottomMatch[0], '').trim();
+  }
+
+  // Split remaining text into paragraphs (single or double newlines)
+  const rawParagraphs = body.split(/\n+/).map(p => p.trim()).filter(Boolean);
+
+  // Tag paragraphs: detect example/illustration markers
+  const exampleRx = /^(Think of it this way:|Here['']?s a practical example:|Building on what we covered)/i;
+  const paragraphs = rawParagraphs.map(p => ({
+    text: p,
+    isExample: exampleRx.test(p),
+  }));
+
+  return { paragraphs, takeaway, sourceInText };
+}
+
+function AnswerBody({ text }) {
+  const { paragraphs, takeaway, sourceInText } = parseAnswer(text);
+
+  // Fallback: render plain if nothing was parsed
+  if (!paragraphs.length && !takeaway) {
+    return <div className="ai-card-body">{text}</div>;
+  }
+
+  return (
+    <div className="ai-card-body parsed">
+      {paragraphs.map((p, i) =>
+        p.isExample
+          ? <div key={i} className="answer-example">{p.text}</div>
+          : <p key={i} className="answer-p">{p.text}</p>
+      )}
+      {takeaway && (
+        <div className="answer-takeaway">
+          <span className="answer-takeaway-label">The bottom line</span>
+          <span className="answer-takeaway-text">{takeaway}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+// ---- end answer parsing ----
 
 /* ============================================================
    ICONS — defined before all components
@@ -2545,20 +2882,17 @@ function LoginScreen({ onLogin, signedOut, onDismissSignedOut }) {
       <div className="login-left fade-in">
         <div className="login-left-top">
           <div className="login-lockup">
-            <div className="org-mark"><img src="assets/abbvie-logo-white.png" alt="AbbVie" /></div>
+            <div className="org-mark"><img src="assets/abbvie-logo-navy.png" alt="AbbVie" /></div>
             <div className="lockup-sep"></div>
             <div className="product">
               <span className="wm">SISO <em>Live!</em></span>
             </div>
           </div>
-          <div className="login-help">
-            Need access? <a href="mailto:sisolive@abbvie.com">sisolive@abbvie.com</a>
-          </div>
         </div>
 
         <div className="login-hero">
           <h1 className="login-headline">
-            <span style={{ whiteSpace: 'nowrap' }}>Learning that</span><br />
+            <span style={{ whiteSpace: 'nowrap' }}>Learning that </span><br />
             <span className="accent" style={{ whiteSpace: 'nowrap' }}>creates impact.</span>
           </h1>
           <p className="login-sub">
@@ -2566,11 +2900,28 @@ function LoginScreen({ onLogin, signedOut, onDismissSignedOut }) {
             confidence, and make faster decisions across supplier inclusion
             and sustainability work.
           </p>
+          <div className="login-feats">
+            <div className="login-feat f-1">
+              <div className="ic"><img src="assets/icon-verified.png" alt="" style={{ width: 24, height: 24, mixBlendMode: 'multiply' }} /></div>
+              <h5>Verified answers</h5>
+              <p>Every response sourced from AbbVie's official supplier inclusion content.</p>
+            </div>
+            <div className="login-feat f-2">
+              <div className="ic"><img src="assets/icon-coaching.png" alt="" style={{ width: 24, height: 24, mixBlendMode: 'multiply' }} /></div>
+              <h5>Precision coaching</h5>
+              <p>Trainer-style guidance that builds real understanding, not just facts.</p>
+            </div>
+            <div className="login-feat f-3">
+              <div className="ic"><img src="assets/icon-progress.png" alt="" style={{ width: 24, height: 24, mixBlendMode: 'multiply' }} /></div>
+              <h5>Track progress</h5>
+              <p>Monitor your knowledge growth across all supplier inclusion topics.</p>
+            </div>
+          </div>
         </div>
       </div>
 
       <div className="login-bot">
-        <img src="assets/abbvie-bot-sm.png" alt="AbbVie assistant" />
+        <img src="assets/abbvie-bot-2.png" alt="AbbVie assistant" />
       </div>
 
       <div className="login-right fade-up" style={{ padding: "32px 36px 32px 6px" }}>
@@ -2626,9 +2977,9 @@ function LoginScreen({ onLogin, signedOut, onDismissSignedOut }) {
               <div className="divider-line" />
             </div>
 
-            <button className="btn-sso" onClick={handleLogin}>
+            <button className="btn-sso" type="button" disabled title="Enterprise SSO will be enabled in the final rollout">
               <div style={{ width: 16, height: 16, color: 'var(--text-on-ink-2)' }}><Icons.shield /></div>
-              Continue with AbbVie SSO
+              AbbVie SSO coming soon
             </button>
 
             <div className="login-card-foot">
@@ -2638,6 +2989,9 @@ function LoginScreen({ onLogin, signedOut, onDismissSignedOut }) {
             </div>
           </div>
         </div>
+        <div className="login-help">
+          Need access? <a href="mailto:sisolive@abbvie.com">sisolive@abbvie.com</a>
+        </div>
       </div>
     </div>
   );
@@ -2646,78 +3000,91 @@ function LoginScreen({ onLogin, signedOut, onDismissSignedOut }) {
 /* ============================================================
    ONBOARDING SCREEN
    ============================================================ */
+const VIMEO_EMBED = 'https://player.vimeo.com/video/1215281143?title=0&byline=0&portrait=0&badge=0&controls=0';
+
+function OnboardStepCard({ num, label, heading, body }) {
+  const [flipped, setFlipped] = React.useState(false);
+  return (
+    <div className={'onboard-step-wrapper' + (flipped ? ' flipped' : '')} onClick={() => setFlipped(f => !f)}>
+      <div className="onboard-step-inner">
+        <div className="onboard-step onboard-step-front">
+          <div className="onboard-step-num">{num}</div>
+          <div className="onboard-step-label">{label}</div>
+          <div className="onboard-step-heading">{heading}</div>
+          <div className="onboard-step-hint">Click to learn more →</div>
+        </div>
+        <div className="onboard-step onboard-step-back">
+          <div className="onboard-step-num">{num}</div>
+          <div className="onboard-step-label">{label}</div>
+          <p className="onboard-step-body">{body}</p>
+          <div className="onboard-step-hint">← Flip back</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function OnboardScreen({ user, onEnter }) {
   return (
     <div className="onboard-screen">
       <div className="onboard-inner fade-up">
         <div className="onboard-top">
           <div className="onboard-brand">
-            <div className="mark"><div style={{ width: 16, height: 16 }}><Icons.atom /></div></div>
+            <img src="assets/abbvie-logo-navy.png" alt="AbbVie" style={{ height: 22, mixBlendMode: 'multiply' }} />
             <span className="name">SISO <em>Live!</em></span>
           </div>
           <div className="onboard-skip-link" onClick={onEnter}>
-            Skip orientation <div style={{ width: 11, height: 11 }}><Icons.arrow /></div>
+            Skip <div style={{ width: 11, height: 11 }}><Icons.arrow /></div>
           </div>
         </div>
 
         <div className="onboard-hero">
           <div className="onboard-eyebrow">
-            <span className="step">Step 01 / 01</span>
-            Getting started
+            <span className="step">Orientation</span>
+            Before you begin
           </div>
-          <h1 className="onboard-h">A two-minute orientation, <em>then you're in.</em></h1>
-          <p className="onboard-p">
-            Learn how to ask questions, read confidence scores, and understand
-            when the assistant will route you to the SISO support team.
-          </p>
+          <h1 className="onboard-h">Supplier Inclusion & Sustainability: <br /><em>What it means at AbbVie.</em></h1>
         </div>
 
-        <div className="video-box" onClick={onEnter}>
-          <div className="video-thumb">
-            <div className="video-duration">02:14</div>
-            <div className="video-tag">
-              <div style={{ width: 9, height: 9 }}><Icons.spark /></div>
-              First-time orientation
-            </div>
-            <div className="video-play">
-              <div className="video-play-inner">
-                <div style={{ width: 22, height: 22, marginLeft: 3 }}><Icons.play /></div>
-              </div>
-            </div>
+        <div className="onboard-video-hero">
+          <div className="onboard-video-embed">
+            <iframe
+              src={VIMEO_EMBED}
+              allow="autoplay; fullscreen; picture-in-picture"
+              allowFullScreen
+              title="SISO Live! Supplier Inclusion & Sustainability Overview"
+            />
           </div>
-          <div className="video-meta-bar">
-            <div>
-              <div className="video-meta-title">How to use SISO <em>Live!</em></div>
-              <div className="video-meta-sub">2 min · AbbVie SISO Office</div>
-            </div>
-            <div className="video-skip" onClick={(e) => { e.stopPropagation(); onEnter(); }}>Skip for now →</div>
+          <div className="onboard-video-caption">
+            <div style={{ width: 9, height: 9 }}><Icons.spark /></div>
+            2 min · AbbVie SISO Office · Watch before getting started
           </div>
         </div>
 
-        <div className="onboard-cards">
-          <div className="onboard-card">
-            <div className="num">01</div>
-            <div className="ic"><div style={{ width: 18, height: 18 }}><Icons.message /></div></div>
-            <h4>Ask <em>naturally</em></h4>
-            <p>Use plain language. No special syntax needed. The assistant understands organizational context.</p>
-          </div>
-          <div className="onboard-card">
-            <div className="num">02</div>
-            <div className="ic"><div style={{ width: 18, height: 18 }}><Icons.target /></div></div>
-            <h4>Trust the <em>score</em></h4>
-            <p>Every answer is scored for relevance. If the AI can't find a solid match, you'll be connected to the SISO support team.</p>
-          </div>
-          <div className="onboard-card">
-            <div className="num">03</div>
-            <div className="ic"><div style={{ width: 18, height: 18 }}><Icons.sparkles /></div></div>
-            <h4>Keep <em>exploring</em></h4>
-            <p>Follow gentle suggestions to deepen your understanding of supplier inclusion practices.</p>
-          </div>
+        <div className="onboard-steps">
+          <OnboardStepCard
+            num="STEP 01"
+            label="Supplier Inclusion"
+            heading="Expanding who AbbVie does business with"
+            body="Supplier inclusion is AbbVie's commitment to actively partnering with businesses owned by underrepresented groups, including minority, women, veteran, LGBTQ+, and disability-owned enterprises. It's a strategic priority to broaden our supply chain, strengthen communities, and bring diverse perspectives to how AbbVie operates."
+          />
+          <OnboardStepCard
+            num="STEP 02"
+            label="Sustainability"
+            heading="Responsible sourcing beyond the bottom line"
+            body="AbbVie's sustainability goals focus on environmental stewardship: reducing carbon emissions, water usage, and waste, while measuring the social and governance impact of our supply chain decisions. Together, Supplier Inclusion & Sustainability form the foundation of how AbbVie creates long-term value."
+          />
+          <OnboardStepCard
+            num="STEP 03"
+            label="SISO Live!"
+            heading="Your precision learning coach"
+            body="SISO Live! gives you instant, verified answers from AbbVie's official supplier inclusion content. Ask in plain language, get grounded responses, and follow suggested questions to build real understanding, not just information."
+          />
         </div>
 
         <div className="onboard-cta-row">
           <div className="onboard-cta-meta">
-            Welcome, <b>{user && user.name ? user.name.split(' ')[0] : 'there'}</b> · {user && user.role ? user.role : 'AbbVie'} · AbbVie
+            Welcome, <b>{user && user.name ? user.name.split(' ')[0] : 'there'}</b>
           </div>
           <button className="btn-primary" onClick={onEnter}>
             Enter SISO Live!
@@ -2732,9 +3099,11 @@ function OnboardScreen({ user, onEnter }) {
 /* ============================================================
    NAV ACCOUNT
    ============================================================ */
-function NavAccount({ user, onLogout }) {
+function NavAccount({ user, onLogout, onRewatch }) {
   const [open, setOpen] = useState(false);
   const [confirm, setConfirm] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const initials = user ? (user.initials || (user.name || '').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '?') : '?';
   return (
     <div className="nav-account">
@@ -2754,8 +3123,15 @@ function NavAccount({ user, onLogout }) {
                 <div className="nav-menu-mail">{user ? (user.email || '') : ''}</div>
               </div>
             </div>
-            <div className="nav-menu-item"><span className="nm-ic"><Icons.user /></span>Profile</div>
-            <div className="nav-menu-item"><span className="nm-ic"><Icons.settings /></span>Account settings</div>
+            <div className="nav-menu-item" onClick={() => { setOpen(false); setShowProfile(true); }}>
+              <span className="nm-ic"><Icons.user /></span>Profile
+            </div>
+            <div className="nav-menu-item" onClick={() => { setOpen(false); setShowSettings(true); }}>
+              <span className="nm-ic"><Icons.settings /></span>Account settings
+            </div>
+            <div className="nav-menu-item" onClick={() => { setOpen(false); onRewatch && onRewatch(); }}>
+              <span className="nm-ic"><Icons.play /></span>Rewatch orientation
+            </div>
             <div className="nav-menu-sep" />
             <div className="nav-menu-item danger" onClick={() => { setOpen(false); setConfirm(true); }}>
               <span className="nm-ic"><Icons.logout /></span>Sign out
@@ -2778,6 +3154,31 @@ function NavAccount({ user, onLogout }) {
           </div>
         </div>
       )}
+      {showProfile && (
+        <div className="logout-overlay" onClick={() => setShowProfile(false)}>
+          <div className="logout-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="ld-ic" style={{ fontSize: 18, fontWeight: 700, fontFamily: 'var(--mono)' }}>{initials}</div>
+            <h3>{user?.name || 'User'}</h3>
+            <p style={{ marginBottom: 4 }}>{user?.email || '—'}</p>
+            {user?.role && <p style={{ fontSize: 12, color: 'var(--text-3)', textTransform: 'capitalize', marginBottom: 0 }}>{user.role}{user.department ? ` · ${user.department}` : ''}</p>}
+            <div className="logout-actions" style={{ marginTop: 24 }}>
+              <button className="logout-btn ghost" onClick={() => setShowProfile(false)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showSettings && (
+        <div className="logout-overlay" onClick={() => setShowSettings(false)}>
+          <div className="logout-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="ld-ic"><Icons.settings /></div>
+            <h3>Account settings</h3>
+            <p>Full account management will be available when AbbVie SSO is enabled in the production release.</p>
+            <div className="logout-actions" style={{ marginTop: 24 }}>
+              <button className="logout-btn ghost" onClick={() => setShowSettings(false)}>Got it</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -2785,13 +3186,13 @@ function NavAccount({ user, onLogout }) {
 /* ============================================================
    CHAT SCREEN
    ============================================================ */
-function ChatScreen({ user, onAdmin, onLogout }) {
+function ChatScreen({ user, onAdmin, onLogout, onRewatch }) {
   const initials = user ? (user.initials || (user.name || '').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'U') : 'U';
   const firstName = user ? (user.name || '').split(' ')[0] || 'there' : 'there';
 
   const [messages, setMessages] = useState([{
     id: 1, role: 'ai',
-    text: `Hello ${firstName}, I'm SISO Live!, your precision learning tool for supplier inclusion and sustainability. What would you like to explore today?`,
+    text: `Hello ${firstName}, I'm SISO Live!, your precision learning tool for Supplier Inclusion & Sustainability. What would you like to explore today?`,
     conf: null, source: null, nudge: null, feedback: null, showComment: false, comment: ''
   }]);
   const [input, setInput] = useState('');
@@ -2828,12 +3229,16 @@ function ChatScreen({ user, onAdmin, onLogout }) {
           ? Math.round(result.confidence * 100)
           : (answer ? 95 : 60);
       const escalated = result.shouldEscalate === true;
+      // Extract source: try parsed text first, then top API source
+      const { sourceInText } = parseAnswer((!escalated && conf >= 45) ? answer : null);
+      const apiSource = result.sources?.[0]?.filename || null;
       setMessages((m) => [...m, {
-        id: Date.now() + 1, role: 'ai',
+        id: result.queryId || Date.now() + 1, role: 'ai',
         text: (!escalated && conf >= 45) ? answer : null,
-        conf, escalated, source: result.source || null, nudge: result.nudge || null,
+        conf, escalated,
+        source: sourceInText || apiSource || null,
+        nudge: result.nudge || null,
         feedback: null, showComment: false, comment: '',
-        chars: answer ? answer.length : null
       }]);
     } catch (e) {
       setTyping(false);
@@ -2897,16 +3302,23 @@ function ChatScreen({ user, onAdmin, onLogout }) {
         <div className="nav-right">
           <div className="nav-status">
             <div className="nav-status-dot" />
-            All systems normal
+            Live environment
           </div>
-          <NavAccount user={user} onLogout={onLogout} />
+          <NavAccount user={user} onLogout={onLogout} onRewatch={onRewatch} />
         </div>
       </div>
 
       <div className="chat-screen">
         <div className="sidebar">
           <div className="sidebar-top">
-            <button className="new-conv-btn">
+            <button className="new-conv-btn" onClick={() => {
+              setMessages([{
+                id: Date.now(), role: 'ai',
+                text: `Hello ${firstName}, I'm SISO Live!, your precision learning tool for Supplier Inclusion & Sustainability. What would you like to explore today?`,
+                conf: null, source: null, nudge: null, feedback: null, showComment: false, comment: ''
+              }]);
+              setInput('');
+            }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <div style={{ width: 14, height: 14, color: 'var(--text-2)' }}><Icons.plus /></div>
                 New conversation
@@ -2950,7 +3362,7 @@ function ChatScreen({ user, onAdmin, onLogout }) {
                 <div className="verified-dot" />
                 Sourced from verified AbbVie docs
               </div>
-              <div className="chat-actions">
+              <div className="chat-actions" style={{ display: 'none' }}>
                 <button className="chat-action-btn" title="Share"><div style={{ width: 15, height: 15 }}><Icons.share /></div></button>
                 <button className="chat-action-btn" title="More"><div style={{ width: 15, height: 15 }}><Icons.more /></div></button>
               </div>
@@ -2976,40 +3388,41 @@ function ChatScreen({ user, onAdmin, onLogout }) {
                       <span className="msg-ai-time">{nowStr()}</span>
                     </div>
 
-                    {msg.conf === null && (
+                    {msg.conf === null && msg.text && (
                       <div className="ai-card">
-                        <div className="ai-card-body">{msg.text}</div>
+                        <div className="ai-card-body" style={{ fontSize: 15, lineHeight: 1.7 }}>{msg.text}</div>
                       </div>
                     )}
 
-                    {msg.conf !== null && !msg.escalated && msg.conf >= 45 && (
-                      <div className="ai-card">
-                        <div className="ai-card-body">{msg.text}</div>
-                        <div className="ai-card-foot">
-                          <div className="conf-gauge">
-                            <ConfidenceArc value={msg.conf} />
-                            <div className="conf-text">Confidence <b>{msg.conf}%</b></div>
-                          </div>
-                          {msg.source && (
-                            <div className="source-chip" title={msg.source}>
-                              <span className="doc-mark"><Icons.files /></span>
-                              {msg.source.replace('.pdf', '').replace(/_/g, ' ')}
-                              <span className="ext">.pdf</span>
+                    {msg.conf !== null && !msg.escalated && msg.conf >= 45 && (() => {
+                      const { sourceInText } = parseAnswer(msg.text);
+                      const displaySource = cleanSourceName(sourceInText || msg.source);
+                      return (
+                        <div className="ai-card">
+                          <AnswerBody text={msg.text} />
+                          <div className="ai-card-foot">
+                            <div className="conf-gauge">
+                              <ConfidenceArc value={msg.conf} />
+                              <div className="conf-text">Confidence <b>{msg.conf}%</b></div>
                             </div>
-                          )}
-                          <div className="msg-foot-meta">
-                            <span className="foot-meta-pill">{msg.chars} chars</span>
-                            <span className="foot-meta-sep">·</span>
-                            <span className="foot-meta-pill">RAG retrieval</span>
+                            {displaySource && (
+                              <div className="source-chip" title={displaySource}>
+                                <span className="doc-mark"><Icons.files /></span>
+                                {displaySource}
+                              </div>
+                            )}
+                            <div className="msg-foot-meta">
+                              <span className="foot-meta-pill">Verified source match</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     {msg.conf !== null && (msg.escalated || msg.conf < 45) && (
                       <div className="ai-card">
                         <div className="ai-card-body low-conf">
-                          I don't have enough verified information to answer this confidently. For accurate guidance, please reach out to the SISO support desk — they're the right resource for this.
+                          I don't have enough verified information to answer this confidently. For accurate guidance, please reach out to the SISO support desk. They're the right resource for this.
                         </div>
                         <div className="ai-card-foot">
                           <div className="conf-gauge">
@@ -3075,10 +3488,10 @@ function ChatScreen({ user, onAdmin, onLogout }) {
                           <div className="escalate-title">This is best handled by the SISO <em>support team</em>.</div>
                           <div className="escalate-desc">They'll provide a precise, verified answer. Typical response under 24 hours.</div>
                         </div>
-                        <button className="escalate-btn">
-                          Open ticket
+                        <a className="escalate-btn" href="mailto:supplierinclusionandsustainability@abbvie.com" style={{ textDecoration: 'none' }}>
+                          Contact support
                           <div style={{ width: 10, height: 10 }}><Icons.arrow /></div>
-                        </button>
+                        </a>
                       </div>
                     )}
                   </div>
@@ -3116,8 +3529,6 @@ function ChatScreen({ user, onAdmin, onLogout }) {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && !typing && sendMessage()} />
                 <div className="chat-input-actions">
-                  <button className="input-action-btn" title="Attach"><div style={{ width: 15, height: 15 }}><Icons.attach /></div></button>
-                  <button className="input-action-btn" title="Voice"><div style={{ width: 15, height: 15 }}><Icons.mic /></div></button>
                   <button className="send-btn" onClick={() => sendMessage()} disabled={typing || !input.trim()}>
                     <div style={{ width: 14, height: 14 }}><Icons.send /></div>
                   </button>
@@ -3159,7 +3570,7 @@ function ChatScreen({ user, onAdmin, onLogout }) {
                   const ph = document.getElementById('stage-placeholder');
                   if (ph) ph.style.display = 'flex';
                 }}
-                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', padding: 16, boxSizing: 'border-box', zIndex: 1, mixBlendMode: 'multiply' }}
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', padding: 0, boxSizing: 'border-box', zIndex: 1, mixBlendMode: 'multiply' }}
               />
               <div className="stage-badge"><span className="bdot" />Thinking…</div>
             </div>
@@ -3168,7 +3579,7 @@ function ChatScreen({ user, onAdmin, onLogout }) {
               {typing ? 'Searching verified sources…' : 'Idle · ready to help'}
             </div>
             <p className="assistant-caption">
-              Your <em>SISO Live!</em> companion comes alive while it retrieves and verifies answers from AbbVie sources.
+              SISO Live searches AbbVie sources and shows the best verified answer it can support.
             </p>
           </div>
         </aside>
@@ -3183,17 +3594,32 @@ function ChatScreen({ user, onAdmin, onLogout }) {
 function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     AdminAPI.getStats()
-      .then(d => { setStats(d); setLoading(false); })
-      .catch(() => setLoading(false));
+      .then(d => { setStats(d); setError(''); setLoading(false); })
+      .catch((e) => { setError(e.message || 'Dashboard data is temporarily unavailable.'); setLoading(false); });
   }, []);
 
   if (loading) {
     return (
       <div style={{ padding: 40, color: 'var(--text-3)', fontFamily: 'var(--mono)', fontSize: 13, textAlign: 'center' }}>
         Loading dashboard…
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="panel" style={{ gridColumn: '1 / -1' }}>
+        <div className="panel-head">
+          <div className="panel-title"><span className="panel-title-ic"><Icons.alert /></span>Dashboard <em>unavailable</em></div>
+          <span className="panel-tag">CHECK SESSION OR API</span>
+        </div>
+        <div style={{ padding: '32px 24px', color: 'var(--text-2)', fontSize: 14, lineHeight: 1.55 }}>
+          {error}
+        </div>
       </div>
     );
   }
@@ -3205,6 +3631,12 @@ function AdminDashboard() {
   const escalationRate = s.escalationRate ?? s.escalation_rate ?? '—';
   const topQueries = s.topQueries || s.top_queries || [];
   const knowledgeGaps = s.knowledgeGaps || s.knowledge_gaps || [];
+  const insightLabels = s.insightLabels || {};
+  const normalizeInsight = (value) => String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  const topQueryKeys = new Set(topQueries.map(([t]) => normalizeInsight(t)));
+  const uniqueKnowledgeGaps = knowledgeGaps
+    .filter(([t]) => !topQueryKeys.has(normalizeInsight(t)))
+    .slice(0, 4);
 
   return (
     <>
@@ -3233,7 +3665,7 @@ function AdminDashboard() {
           <div className={`metric-val ${avgConf !== '—' && avgConf >= 70 ? 'green' : avgConf !== '—' ? 'amber' : ''}`}>
             {avgConf !== '—' ? <>{avgConf}<span className="pct">%</span></> : '—'}
           </div>
-          <div className="metric-foot"><span>avg retrieval score</span></div>
+          <div className="metric-foot"><span>source match quality</span></div>
         </div>
         <div className="metric">
           <div className="metric-head">
@@ -3243,7 +3675,7 @@ function AdminDashboard() {
           <div className="metric-val amber">
             {escalationRate !== '—' ? <>{escalationRate}<span className="pct">%</span></> : '—'}
           </div>
-          <div className="metric-foot"><span>auto-routed</span></div>
+          <div className="metric-foot"><span>sent to support</span></div>
         </div>
       </div>
 
@@ -3252,16 +3684,16 @@ function AdminDashboard() {
           <div className="panel-head">
             <div className="panel-title">
               <span className="panel-title-ic"><Icons.chart /></span>
-              Top queries <em>this month</em>
+              {(insightLabels.topQueries || 'Answered demand').split(' ')[0]} <em>{(insightLabels.topQueries || 'Answered demand').split(' ').slice(1).join(' ') || 'questions'}</em>
             </div>
-            <span className="panel-tag">RANKED BY VOLUME</span>
+            <span className="panel-tag">ANSWERED FROM APPROVED SOURCES</span>
           </div>
           <div className="panel-body">
             {topQueries.length === 0 ? (
               <div style={{ padding: '24px 12px', color: 'var(--text-3)', fontSize: 13, textAlign: 'center' }}>
-                No query data yet
+                No answered questions yet.
               </div>
-            ) : topQueries.slice(0, 5).map(([t, c, w], i) => (
+            ) : topQueries.slice(0, 4).map(([t, c, w], i) => (
               <div key={t} className="q-row">
                 <span className="q-rank">{String(i + 1).padStart(2, '0')}</span>
                 <span className="q-text">{t}</span>
@@ -3276,51 +3708,40 @@ function AdminDashboard() {
           <div className="panel-head">
             <div className="panel-title">
               <span className="panel-title-ic"><Icons.alert /></span>
-              Knowledge <em>gaps</em>
+              {(insightLabels.knowledgeGaps || 'Needs review').split(' ')[0]} <em>{(insightLabels.knowledgeGaps || 'Needs review').split(' ').slice(1).join(' ') || 'review'}</em>
             </div>
-            <span className="panel-tag">ESCALATED · NEEDS CONTENT</span>
+            <span className="panel-tag">ESCALATED OR LOW CONFIDENCE</span>
           </div>
           <div className="panel-body">
-            {knowledgeGaps.length === 0 ? (
-              <div style={{ padding: '24px 12px', color: 'var(--text-3)', fontSize: 13, textAlign: 'center' }}>
-                No gaps identified yet
+            {uniqueKnowledgeGaps.length === 0 ? (
+              <div style={{ padding: '28px 20px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, textAlign: 'center' }}>
+                <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(21,183,154,0.10)', border: '1px solid rgba(21,183,154,0.20)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--teal)' }}>
+                  <div style={{ width: 20, height: 20 }}><Icons.check /></div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', marginBottom: 6, letterSpacing: '-0.01em' }}>No gaps detected this month</div>
+                  <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6, maxWidth: 320 }}>
+                    This panel surfaces questions learners asked that SISO Live! couldn't answer confidently — either escalated to support or answered below 25% confidence. When those appear, they'll show up here ranked by frequency so you know exactly what content to add next.
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', paddingTop: 4 }}>
+                  {['Escalated questions', 'Low-confidence answers', 'Content to upload next'].map(label => (
+                    <span key={label} style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.08em', padding: '4px 10px', borderRadius: 999, background: 'var(--paper-3)', border: '1px solid var(--rule)', color: 'var(--text-3)' }}>{label}</span>
+                  ))}
+                </div>
               </div>
-            ) : knowledgeGaps.slice(0, 4).map(([t, c]) => (
+            ) : uniqueKnowledgeGaps.map(([t, c]) => (
               <div key={t} className="gap-row">
                 <div className="gap-dot" />
                 <span className="gap-text">{t}</span>
                 <span className="gap-count">{c}</span>
-                <span className="gap-action">ADD CONTENT →</span>
+                <span className="gap-action">REVIEW</span>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {topQueries.length > 0 && (
-        <div className="panel" style={{ gridColumn: '1 / -1' }}>
-          <div className="panel-head">
-            <div className="panel-title">
-              <span className="panel-title-ic"><Icons.message /></span>
-              Question <em>distribution</em>
-            </div>
-            <span className="panel-tag">WHERE USERS ARE ASKING</span>
-          </div>
-          <div className="panel-body" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 10 }}>
-            {topQueries.slice(0, 6).map(([t, c, w], i) => (
-              <div key={t} style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '10px 14px', background: 'var(--paper-tinted)', border: '1px solid var(--rule)', borderRadius: 'var(--r)' }}>
-                <div style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.4 }}>{t}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ flex: 1, height: 4, borderRadius: 2, background: 'var(--paper-2)', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${w}%`, background: 'var(--abbvie-blue)', borderRadius: 2 }} />
-                  </div>
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--text-3)', flexShrink: 0 }}>{c}×</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </>
   );
 }
@@ -3420,7 +3841,7 @@ function AdminUpload() {
           <span className="panel-tag">CHUNKED &amp; EMBEDDED ON UPLOAD</span>
         </div>
         <div className="panel-body" style={{ padding: '16px 20px 20px', overflow: 'visible' }}>
-          <input ref={fileInputRef} type="file" multiple accept=".pdf,.docx,.txt,.pptx,.csv,.xlsx,.mp4,.mov,.wav"
+          <input ref={fileInputRef} type="file" multiple accept=".pdf,.docx,.doc,.csv,.txt"
             style={{ display: 'none' }} onChange={(e) => handleFiles(e.target.files)} />
           <div
             className="upload-zone"
@@ -3431,9 +3852,9 @@ function AdminUpload() {
             onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}>
             <div className="up-ic"><div style={{ width: 22, height: 22 }}><Icons.upload /></div></div>
             <div className="up-h">Drop files to ingest</div>
-            <div className="up-p">Files are automatically chunked and embedded into the RAG index. PDFs are OCR'd, videos transcribed.</div>
+            <div className="up-p">PDF, DOCX, CSV, and TXT files are processed into searchable source sections after upload.</div>
             <div className="file-pills">
-              {['PDF', 'DOCX', 'XLSX', 'CSV', 'TXT', 'MP4', 'MOV', 'WAV'].map((t) => (
+              {['PDF', 'DOCX', 'CSV', 'TXT'].map((t) => (
                 <span key={t} className="file-pill">{t}</span>
               ))}
             </div>
@@ -3474,7 +3895,7 @@ function AdminUpload() {
           {[
             ['Use descriptive filenames', 'They become part of source attribution.'],
             ['Prefer text-native PDFs', 'OCR works on scans but adds latency.'],
-            ['Add a one-page summary', 'Improves retrieval for broad questions.'],
+            ['Add a one-page summary', 'Improves search quality for broad questions.'],
             ['Mark drafts clearly', 'Use "Draft" in the filename to gate confidence.']
           ].map(([t, d]) => (
             <div key={t} className="tip-row">
@@ -3518,14 +3939,14 @@ function SystemHealthPanel() {
   return (
     <div className="panel" style={{ marginBottom: 20 }}>
       <div className="panel-head">
-        <div className="panel-title"><span className="panel-title-ic"><Icons.shield /></span>System <em>health</em></div>
+        <div className="panel-title"><span className="panel-title-ic"><Icons.shield /></span>Search <em>health</em></div>
         <button className="export-btn" onClick={run} disabled={running} style={{ opacity: running ? 0.6 : 1 }}>
-          {running ? 'Running…' : 'Run diagnostic'}
+          {running ? 'Checking...' : 'Check search health'}
         </button>
       </div>
       {!health && !running && (
         <div style={{ padding: '20px 24px', fontSize: 13, color: 'var(--text-3)' }}>
-          Click "Run diagnostic" to verify all AI services are working and documents are searchable.
+          Checks the source index, language model, and a live supplier inclusion source lookup.
         </div>
       )}
       {running && (
@@ -3548,7 +3969,7 @@ function SystemHealthPanel() {
                 <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>
                   {vectorCount === 0
                     ? <span style={{ color: 'var(--signal)' }}>No documents are searchable yet</span>
-                    : <span style={{ color: 'var(--teal)' }}>{vectorCount} document sections indexed</span>
+                    : <span style={{ color: 'var(--teal)' }}>{vectorCount} source sections indexed</span>
                   }
                 </div>
               )}
@@ -3573,7 +3994,7 @@ function SystemHealthPanel() {
           </div>
           {matches.length > 0 && (
             <div>
-              <div style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--text-3)', marginBottom: 8 }}>LIVE TEST: "What is supplier inclusion?" — DOCUMENT SECTIONS FOUND</div>
+              <div style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--text-3)', marginBottom: 8 }}>LIVE TEST: "What is supplier inclusion?" - SOURCE SECTIONS FOUND</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {matches.map((m, i) => (
                   <div key={i} style={{ background: 'var(--bg-2)', borderRadius: 8, padding: '10px 12px', fontSize: 12 }}>
@@ -3606,7 +4027,8 @@ function SystemHealthPanel() {
 function AdminDocs() {
   const [docs, setDocs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('All topics');
+  const [filter, setFilter] = useState('All documents');
+  const [searchTerm, setSearchTerm] = useState('');
   const [reindexing, setReindexing] = useState({});
 
   useEffect(() => {
@@ -3642,6 +4064,13 @@ function AdminDocs() {
   }
 
   const needsReindex = docs.some(d => d.has_vectors === false);
+  const filteredDocs = docs.filter((d) => {
+    const missingVectors = d.has_vectors === false;
+    if (filter === 'Searchable' && missingVectors) return false;
+    if (filter === 'Needs indexing' && !missingVectors) return false;
+    const haystack = `${d.name || ''} ${d.filename || ''} ${d.title || ''} ${d.file_type || ''}`.toLowerCase();
+    return haystack.includes(searchTerm.toLowerCase().trim());
+  });
 
   return (
     <>
@@ -3650,17 +4079,21 @@ function AdminDocs() {
       {needsReindex && (
         <div style={{ background: 'var(--signal-soft)', border: '1px solid var(--signal)', borderRadius: 10, padding: '12px 16px', marginBottom: 16, fontSize: 13, color: 'var(--signal)', display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 16, height: 16, flexShrink: 0 }}><Icons.alert /></div>
-          Some documents aren't searchable yet — the AI won't be able to find them. Click <strong>Re-index</strong> next to each affected document to activate it. This usually takes under 30 seconds.
+          Some documents aren't searchable yet. Click <strong>Re-index</strong> next to each affected document to activate it. This usually takes under 30 seconds.
         </div>
       )}
 
       <div className="docs-toolbar">
         <div className="docs-search">
           <div className="docs-search-ic"><Icons.search /></div>
-          <input placeholder="Search documents, topics, sources…" />
+          <input
+            placeholder="Search documents, topics, sources..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
         <div className="docs-filters">
-          {['All topics', 'Active', 'Reindex', 'Stale'].map((t) => (
+          {['All documents', 'Searchable', 'Needs indexing'].map((t) => (
             <span key={t} className={`docs-chip ${filter === t ? 'on' : ''}`} onClick={() => setFilter(t)}>{t}</span>
           ))}
         </div>
@@ -3669,7 +4102,7 @@ function AdminDocs() {
       <div className="panel">
         <div className="panel-head">
           <div className="panel-title"><span className="panel-title-ic"><Icons.files /></span>All <em>documents</em></div>
-          <span className="panel-tag">{docs.length} DOCUMENTS</span>
+          <span className="panel-tag">{filteredDocs.length} OF {docs.length} DOCUMENTS</span>
         </div>
         {docs.length === 0 ? (
           <div style={{ padding: '40px 20px', color: 'var(--text-3)', fontSize: 14, textAlign: 'center' }}>
@@ -3678,9 +4111,14 @@ function AdminDocs() {
         ) : (
           <div className="docs-table">
             <div className="docs-table-head">
-              <span>Document</span><span>Chunks</span><span>Status</span><span></span>
+            <span>Document</span><span>Sections</span><span>Status</span><span></span>
             </div>
-            {docs.map((d) => {
+            {filteredDocs.length === 0 && (
+              <div style={{ padding: '28px 20px', color: 'var(--text-3)', fontSize: 14, textAlign: 'center' }}>
+                No documents match this view.
+              </div>
+            )}
+            {filteredDocs.map((d) => {
               const missingVectors = d.has_vectors === false;
               return (
                 <div key={d.id || d.name} className="docs-table-row">
@@ -3691,7 +4129,7 @@ function AdminDocs() {
                       <div className="doc-meta">{d.file_type?.toUpperCase() || ''} {d.file_size_bytes ? `· ${Math.round(d.file_size_bytes / 1024)}KB` : ''}</div>
                     </div>
                   </div>
-                  <span style={{ fontSize: 12, color: 'var(--text-2)' }}>{d.chunk_count ? `${d.chunk_count} chunks` : '—'}</span>
+                  <span style={{ fontSize: 12, color: 'var(--text-2)' }}>{d.chunk_count ? `${d.chunk_count} sections` : '-'}</span>
                   <span className={`doc-status ${missingVectors ? 'warn' : ''}`}>
                     {missingVectors ? 'NOT SEARCHABLE' : (d.status || 'ACTIVE').toUpperCase()}
                   </span>
@@ -3703,7 +4141,7 @@ function AdminDocs() {
                         onClick={() => handleReingest(d.id)}
                         disabled={reindexing[d.id]}
                       >
-                        {reindexing[d.id] ? 'Indexing…' : 'Re-index'}
+                        {reindexing[d.id] ? 'Indexing...' : 'Re-index'}
                       </button>
                     )}
                     <button className="doc-action-btn" onClick={() => handleDelete(d.id)}>
@@ -3720,109 +4158,84 @@ function AdminDocs() {
   );
 }
 
-/* ============================================================
-   ADMIN — ANALYTICS (static reporting view)
-   ============================================================ */
-function AdminAnalytics() {
-  const trend = [40, 52, 48, 64, 78, 72, 88, 94, 102, 96, 118, 142, 138, 156];
-  const max = Math.max(...trend);
-  return (
-    <>
-      <div className="metrics-grid">
-        <div className="metric">
-          <div className="metric-head"><div className="metric-lbl">Queries / day (avg)</div><div className="metric-ic"><Icons.chart /></div></div>
-          <div className="metric-val">—</div>
-          <div className="metric-foot"><span>loading…</span></div>
-        </div>
-        <div className="metric">
-          <div className="metric-head"><div className="metric-lbl">Unique questions</div><div className="metric-ic"><Icons.message /></div></div>
-          <div className="metric-val">—</div>
-          <div className="metric-foot"><span>loading…</span></div>
-        </div>
-        <div className="metric">
-          <div className="metric-head"><div className="metric-lbl">Avg response time</div><div className="metric-ic"><Icons.refresh /></div></div>
-          <div className="metric-val green">—</div>
-          <div className="metric-foot"><span>P95 target: 3s</span></div>
-        </div>
-        <div className="metric">
-          <div className="metric-head"><div className="metric-lbl">Resolved by AI</div><div className="metric-ic"><Icons.check /></div></div>
-          <div className="metric-val green">—</div>
-          <div className="metric-foot"><span>rest escalated</span></div>
-        </div>
-      </div>
-
-      <div className="panel">
-        <div className="panel-head"><div className="panel-title"><span className="panel-title-ic"><Icons.chart /></span>Query <em>volume</em></div><span className="panel-tag">DAILY · LAST 14 DAYS</span></div>
-        <div className="panel-body" style={{ padding: '20px 24px 16px' }}>
-          <div className="chart-area">
-            {trend.map((v, i) => (
-              <div key={i} className="chart-bar" style={{ height: `${v / max * 100}%` }}>
-                <span className="chart-bar-val">{v}</span>
-              </div>
-            ))}
-          </div>
-          <div className="chart-axis">
-            {['M','T','W','T','F','S','S','M','T','W','T','F','S','S'].map((d, i) => (
-              <span key={i}>{d}</span>
-            ))}
-          </div>
-        </div>
-      </div>
-    </>
-  );
-}
 
 /* ============================================================
    ADMIN — ESCALATIONS
    ============================================================ */
 function AdminEscalations() {
-  const items = [
-    { q: 'How do I calculate Scope 3 emissions for our top 10 suppliers?', user: 'User', role: 'ESG Analyst', when: 'recently', state: 'open', conf: 71 },
-    { q: 'What is the deadline for supplier inclusion attestations?', user: 'User', role: 'Procurement', when: 'recently', state: 'open', conf: 64 }
-  ];
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    AdminAPI.getEscalations()
+      .then(d => { setItems(Array.isArray(d) ? d : []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const fmtDate = (s) => {
+    if (!s) return '—';
+    const d = new Date(s);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  };
+
   return (
     <>
       <div className="metrics-grid">
         <div className="metric">
-          <div className="metric-head"><div className="metric-lbl">Open</div><div className="metric-ic"><Icons.alert /></div></div>
-          <div className="metric-val amber">—</div>
-          <div className="metric-foot"><span>this week</span></div>
+          <div className="metric-head"><div className="metric-lbl">Total (30d)</div><div className="metric-ic"><Icons.alert /></div></div>
+          <div className="metric-val amber">{loading ? '—' : items.length}</div>
+          <div className="metric-foot"><span>questions escalated</span></div>
         </div>
         <div className="metric">
-          <div className="metric-head"><div className="metric-lbl">Assigned</div><div className="metric-ic"><Icons.users /></div></div>
-          <div className="metric-val">—</div>
-          <div className="metric-foot"><span>across desks</span></div>
+          <div className="metric-head"><div className="metric-lbl">Avg confidence</div><div className="metric-ic"><Icons.target /></div></div>
+          <div className="metric-val">
+            {loading || items.length === 0 ? '—' : Math.round(items.reduce((s, it) => s + (parseFloat(it.confidence_score) || 0), 0) / items.length * 100) + '%'}
+          </div>
+          <div className="metric-foot"><span>at time of escalation</span></div>
         </div>
         <div className="metric">
-          <div className="metric-head"><div className="metric-lbl">Avg response</div><div className="metric-ic"><Icons.refresh /></div></div>
-          <div className="metric-val green">—</div>
-          <div className="metric-foot"><span>SLA: 24 hours</span></div>
+          <div className="metric-head"><div className="metric-lbl">Below 40%</div><div className="metric-ic"><Icons.refresh /></div></div>
+          <div className="metric-val amber">
+            {loading ? '—' : items.filter(it => parseFloat(it.confidence_score) < 0.40).length}
+          </div>
+          <div className="metric-foot"><span>very low confidence</span></div>
         </div>
         <div className="metric">
-          <div className="metric-head"><div className="metric-lbl">Resolved (30d)</div><div className="metric-ic"><Icons.check /></div></div>
-          <div className="metric-val green">—</div>
-          <div className="metric-foot"><span>vs last month</span></div>
+          <div className="metric-head"><div className="metric-lbl">Unique questions</div><div className="metric-ic"><Icons.message /></div></div>
+          <div className="metric-val">
+            {loading ? '—' : new Set(items.map(it => it.question)).size}
+          </div>
+          <div className="metric-foot"><span>distinct escalations</span></div>
         </div>
       </div>
       <div className="panel">
         <div className="panel-head">
-          <div className="panel-title"><span className="panel-title-ic"><Icons.alert /></span>Escalation <em>queue</em></div>
+          <div className="panel-title"><span className="panel-title-ic"><Icons.alert /></span>Escalation <em>log</em></div>
+          <span className="panel-tag">LAST 30 DAYS · {loading ? '…' : items.length} ITEMS</span>
         </div>
         <div className="panel-body" style={{ padding: '4px 12px 12px' }}>
-          {items.map((it) => (
-            <div key={it.q} className="esc-row">
-              <span className={`esc-state ${it.state}`}>{it.state.toUpperCase()}</span>
-              <div className="esc-main">
-                <div className="esc-q">{it.q}</div>
-                <div className="esc-meta">{it.user} · {it.role} · {it.when}</div>
+          {loading && <div style={{ padding: '24px 12px', color: 'var(--text-3)', fontSize: 13, textAlign: 'center' }}>Loading…</div>}
+          {!loading && items.length === 0 && (
+            <div style={{ padding: '24px 12px', color: 'var(--text-3)', fontSize: 13, textAlign: 'center' }}>No escalations in the last 30 days.</div>
+          )}
+          {!loading && items.map((it, i) => {
+            const conf = it.confidence_score != null ? Math.round(parseFloat(it.confidence_score) * 100) : null;
+            return (
+              <div key={i} className="esc-row">
+                <span className="esc-state open">ESCALATED</span>
+                <div className="esc-main">
+                  <div className="esc-q">{it.question}</div>
+                  <div className="esc-meta">{fmtDate(it.created_at)}</div>
+                </div>
+                {conf != null && (
+                  <div className="esc-conf">
+                    <div className="esc-conf-lbl">CONF</div>
+                    <div className={`esc-conf-v ${conf < 40 ? 'warn' : ''}`}>{conf}%</div>
+                  </div>
+                )}
               </div>
-              <div className="esc-conf">
-                <div className="esc-conf-lbl">CONF</div>
-                <div className={`esc-conf-v ${it.conf < 75 ? 'warn' : ''}`}>{it.conf}%</div>
-              </div>
-              <button className="esc-open">Open<div style={{ width: 11, height: 11 }}><Icons.arrow /></div></button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </>
@@ -3833,109 +4246,114 @@ function AdminEscalations() {
    ADMIN — FEEDBACK
    ============================================================ */
 function AdminFeedback() {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    AdminAPI.getFeedback()
+      .then(d => { setItems(Array.isArray(d) ? d : []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const helpful = items.filter(it => it.rating === 'up' || it.rating === 1 || it.rating === true).length;
+  const notHelpful = items.filter(it => it.rating === 'down' || it.rating === -1 || it.rating === false).length;
+  const withComments = items.filter(it => it.comment && it.comment.trim()).length;
+
+  const fmtDate = (s) => {
+    if (!s) return '—';
+    const d = new Date(s);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
   return (
     <>
       <div className="metrics-grid">
         <div className="metric">
           <div className="metric-head"><div className="metric-lbl">Helpful</div><div className="metric-ic"><Icons.thumbup /></div></div>
-          <div className="metric-val green">—</div>
-          <div className="metric-foot"><span>rated helpful</span></div>
+          <div className="metric-val green">{loading ? '—' : helpful}</div>
+          <div className="metric-foot"><span>rated helpful (30d)</span></div>
         </div>
         <div className="metric">
           <div className="metric-head"><div className="metric-lbl">Not helpful</div><div className="metric-ic"><Icons.thumbdown /></div></div>
-          <div className="metric-val amber">—</div>
+          <div className="metric-val amber">{loading ? '—' : notHelpful}</div>
           <div className="metric-foot"><span>rated not helpful</span></div>
         </div>
         <div className="metric">
           <div className="metric-head"><div className="metric-lbl">With comments</div><div className="metric-ic"><Icons.message /></div></div>
-          <div className="metric-val">—</div>
-          <div className="metric-foot"><span>rich signal</span></div>
+          <div className="metric-val">{loading ? '—' : withComments}</div>
+          <div className="metric-foot"><span>detailed signal</span></div>
         </div>
         <div className="metric">
-          <div className="metric-head"><div className="metric-lbl">Triaged</div><div className="metric-ic"><Icons.check /></div></div>
-          <div className="metric-val">—</div>
-          <div className="metric-foot"><span>awaiting review</span></div>
+          <div className="metric-head"><div className="metric-lbl">Satisfaction</div><div className="metric-ic"><Icons.check /></div></div>
+          <div className="metric-val green">
+            {loading || items.length === 0 ? '—' : <>{Math.round((helpful / items.length) * 100)}<span className="pct">%</span></>}
+          </div>
+          <div className="metric-foot"><span>of rated responses</span></div>
         </div>
       </div>
       <div className="panel">
         <div className="panel-head">
           <div className="panel-title"><span className="panel-title-ic"><Icons.thumbup /></span>Recent <em>feedback</em></div>
+          <span className="panel-tag">LAST 30 DAYS · {loading ? '…' : items.length} ITEMS</span>
         </div>
-        <div style={{ padding: '40px 20px', color: 'var(--text-3)', fontSize: 14, textAlign: 'center' }}>
-          Feedback will appear here as users rate answers.
+        <div className="panel-body" style={{ padding: '4px 12px 12px' }}>
+          {loading && <div style={{ padding: '24px 12px', color: 'var(--text-3)', fontSize: 13, textAlign: 'center' }}>Loading…</div>}
+          {!loading && items.length === 0 && (
+            <div style={{ padding: '24px 12px', color: 'var(--text-3)', fontSize: 14, textAlign: 'center' }}>
+              Feedback will appear here as users rate answers.
+            </div>
+          )}
+          {!loading && items.map((it, i) => {
+            const isUp = it.rating === 'up' || it.rating === 1 || it.rating === true;
+            return (
+              <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '10px 0', borderBottom: '1px solid var(--rule)' }}>
+                <div style={{
+                  width: 28, height: 28, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: isUp ? 'var(--teal-soft, #e6f4f1)' : 'var(--signal-soft)',
+                  color: isUp ? 'var(--teal)' : 'var(--signal)'
+                }}>
+                  <div style={{ width: 14, height: 14 }}>{isUp ? <Icons.thumbup /> : <Icons.thumbdown />}</div>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.4, marginBottom: 3 }}>{it.question}</div>
+                  {it.comment && <div style={{ fontSize: 12, color: 'var(--text-2)', fontStyle: 'italic', lineHeight: 1.4 }}>"{it.comment}"</div>}
+                </div>
+                <span style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--text-3)', flexShrink: 0 }}>{fmtDate(it.created_at)}</span>
+              </div>
+            );
+          })}
         </div>
       </div>
     </>
   );
 }
 
-/* ============================================================
-   ADMIN — ACCURACY
-   ============================================================ */
-function AdminAccuracy() {
-  return (
-    <>
-      <div className="metrics-grid">
-        <div className="metric">
-          <div className="metric-head"><div className="metric-lbl">Avg confidence</div><div className="metric-ic"><Icons.target /></div></div>
-          <div className="metric-val green">—</div>
-          <div className="metric-foot"><span>90% threshold</span></div>
-        </div>
-        <div className="metric">
-          <div className="metric-head"><div className="metric-lbl">Above threshold</div><div className="metric-ic"><Icons.check /></div></div>
-          <div className="metric-val">—</div>
-          <div className="metric-foot"><span>of answers</span></div>
-        </div>
-        <div className="metric">
-          <div className="metric-head"><div className="metric-lbl">Below threshold</div><div className="metric-ic"><Icons.alert /></div></div>
-          <div className="metric-val amber">—</div>
-          <div className="metric-foot"><span>auto-routed</span></div>
-        </div>
-        <div className="metric">
-          <div className="metric-head"><div className="metric-lbl">Threshold</div><div className="metric-ic"><Icons.settings /></div></div>
-          <div className="metric-val">90<span className="pct">%</span></div>
-          <div className="metric-foot"><span>minimum confidence</span></div>
-        </div>
-      </div>
-      <div className="panel">
-        <div className="panel-head"><div className="panel-title"><span className="panel-title-ic"><Icons.target /></span>Topic accuracy <em>breakdown</em></div><span className="panel-tag">90% CONFIDENCE THRESHOLD</span></div>
-        <div style={{ padding: '40px 20px', color: 'var(--text-3)', fontSize: 14, textAlign: 'center' }}>
-          Accuracy data will populate as queries come in.
-        </div>
-      </div>
-    </>
-  );
-}
 
 /* ============================================================
    ADMIN SCREEN
    ============================================================ */
-function AdminScreen({ user, onBack, onLogout }) {
+function AdminScreen({ user, onBack, onLogout, onRewatch }) {
   const [activeTab, setActiveTab] = useState('dashboard');
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', section: 'Overview' },
     { id: 'users', label: 'User activity', icon: 'users', section: '' },
-    { id: 'upload', label: 'Upload content', icon: 'upload', section: 'Knowledge base' },
+    { id: 'upload', label: 'Add content', icon: 'upload', section: 'Knowledge base' },
     { id: 'docs', label: 'Manage docs', icon: 'files', section: '' },
-    { id: 'analytics', label: 'Query analytics', icon: 'chart', section: 'Insights' },
-    { id: 'escalations', label: 'Escalations', icon: 'alert', section: '' },
+    { id: 'escalations', label: 'Escalations', icon: 'alert', section: 'Insights' },
     { id: 'feedback', label: 'Feedback', icon: 'thumbup', section: '' },
-    { id: 'accuracy', label: 'Accuracy', icon: 'target', section: '' }
   ];
 
   const tabLabel = {
     dashboard: 'Overview · Last 30 days', users: 'People · Last 30 days',
-    upload: 'Knowledge base · Ingestion', docs: 'Knowledge base · Documents',
-    analytics: 'Insights · Query patterns', escalations: 'Insights · Open queue',
-    feedback: 'Insights · User signal', accuracy: 'Insights · Confidence by topic'
+    upload: 'Knowledge base · Add content', docs: 'Knowledge base · Documents',
+    escalations: 'Insights · Escalation log', feedback: 'Insights · User signal',
   };
 
   const tabH2 = {
     dashboard: <><em>Dashboard</em> overview</>, users: <>User <em>activity</em></>,
-    upload: <>Upload <em>content</em></>, docs: <>Manage <em>documents</em></>,
-    analytics: <>Query <em>analytics</em></>, escalations: <>Escalations <em>queue</em></>,
-    feedback: <>User <em>feedback</em></>, accuracy: <>Topic <em>accuracy</em></>
+    upload: <>Add <em>content</em></>, docs: <>Manage <em>documents</em></>,
+    escalations: <>Escalation <em>log</em></>, feedback: <>User <em>feedback</em></>,
   };
 
   return (
@@ -3956,9 +4374,9 @@ function AdminScreen({ user, onBack, onLogout }) {
         <div className="nav-right">
           <div className="nav-status">
             <div className="nav-status-dot" />
-            All systems normal
+            Live environment
           </div>
-          <NavAccount user={user} onLogout={onLogout} />
+          <NavAccount user={user} onLogout={onLogout} onRewatch={onRewatch} />
         </div>
       </div>
 
@@ -3980,12 +4398,6 @@ function AdminScreen({ user, onBack, onLogout }) {
             </React.Fragment>
           ))}
 
-          <div className="admin-footer">
-            <div className="admin-item">
-              <span className="ai-ic"><Icons.settings /></span>
-              Settings
-            </div>
-          </div>
         </div>
 
         <div className="admin-main">
@@ -3996,10 +4408,6 @@ function AdminScreen({ user, onBack, onLogout }) {
             </div>
             <div className="admin-header-r">
               <div className="range-pill">Last 30 days <span className="range-pill-mono">↓</span></div>
-              <button className="export-btn">
-                <div style={{ width: 13, height: 13 }}><Icons.download /></div>
-                Export
-              </button>
             </div>
           </div>
 
@@ -4007,10 +4415,8 @@ function AdminScreen({ user, onBack, onLogout }) {
           {activeTab === 'users' && <AdminUsers />}
           {activeTab === 'upload' && <AdminUpload />}
           {activeTab === 'docs' && <AdminDocs />}
-          {activeTab === 'analytics' && <AdminAnalytics />}
           {activeTab === 'escalations' && <AdminEscalations />}
           {activeTab === 'feedback' && <AdminFeedback />}
-          {activeTab === 'accuracy' && <AdminAccuracy />}
         </div>
       </div>
     </div>
@@ -4021,19 +4427,65 @@ function AdminScreen({ user, onBack, onLogout }) {
    APP
    ============================================================ */
 function App() {
+  const forceFreshOnboarding = () => sessionStorage.getItem('siso_force_onboard_once') === '1';
+  const onboardKeyFor = (u) => `siso_onboard_done:${String(u?.email || u?.id || 'guest').toLowerCase()}`;
+  const shouldShowOnboarding = (u) => {
+    if (!u) return false;
+    if (forceFreshOnboarding()) return true;
+    if (u.firstLogin === true) return true;
+    return localStorage.getItem(onboardKeyFor(u)) !== '1';
+  };
+
   const [screen, setScreen] = useState(() => {
     try {
+      const freshDemo = new URLSearchParams(window.location.search).get('fresh') === '1';
+      if (freshDemo) {
+        Object.keys(localStorage)
+          .filter(k => k === 'siso_onboard_done' || k.startsWith('siso_onboard_done:'))
+          .forEach(k => localStorage.removeItem(k));
+        sessionStorage.setItem('siso_force_onboard_once', '1');
+        window.history.replaceState({}, '', window.location.pathname);
+      }
       const u = localStorage.getItem(USER_KEY);
-      return u ? 'chat' : 'login';
+      const tok = getToken();
+      if (!u || !tok) {
+        clearStoredSession();
+        return 'login';
+      }
+      const parsed = JSON.parse(u);
+      if (forceFreshOnboarding()) return 'onboard';
+      return shouldShowOnboarding(parsed) ? 'onboard' : 'chat';
     } catch { return 'login'; }
   });
   const [user, setUser] = useState(() => {
     try {
       const u = localStorage.getItem(USER_KEY);
-      return u ? JSON.parse(u) : null;
+      return u && getToken() ? JSON.parse(u) : null;
     } catch { return null; }
   });
   const [signedOut, setSignedOut] = useState(false);
+
+  // Register the global 401 handler and validate stored session on load
+  useEffect(() => {
+    setOnUnauthorized(() => {
+      clearStoredSession();
+      setUser(null);
+      setScreen('login');
+      setSignedOut(false);
+    });
+    // Validate stored token — if expired or invalid, clear session now
+    if (getToken()) {
+      AuthAPI.validate().catch(() => {
+        clearStoredSession();
+        setUser(null);
+        setScreen('login');
+      });
+    } else if (localStorage.getItem(USER_KEY)) {
+      clearStoredSession();
+      setUser(null);
+      setScreen('login');
+    }
+  }, []);
 
   const handleLogin = (data) => {
     const u = data.user || data;
@@ -4042,21 +4494,17 @@ function App() {
     localStorage.setItem(USER_KEY, JSON.stringify(u));
     setUser(u);
     setSignedOut(false);
-    if (u.is_admin || u.role === 'admin') {
-      setScreen('admin');
-    } else {
-      const seen = localStorage.getItem('siso_onboard_done');
-      setScreen(seen ? 'chat' : 'onboard');
-    }
+    setScreen(shouldShowOnboarding(u) ? 'onboard' : 'chat');
   };
 
   const handleLogout = () => {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
+    clearStoredSession();
     setUser(null);
     setScreen('login');
     setSignedOut(true);
   };
+
+  const isAdmin = !!(user?.is_admin || user?.role === 'admin');
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -4064,15 +4512,20 @@ function App() {
         <LoginScreen onLogin={handleLogin} signedOut={signedOut} onDismissSignedOut={() => setSignedOut(false)} />
       )}
       {screen === 'onboard' && (
-        <OnboardScreen user={user} onEnter={() => { localStorage.setItem('siso_onboard_done', '1'); setScreen('chat'); }} />
+        <OnboardScreen user={user} onEnter={() => {
+          localStorage.setItem(onboardKeyFor(user), '1');
+          sessionStorage.removeItem('siso_force_onboard_once');
+          setScreen('chat');
+        }} />
       )}
       {screen === 'chat' && (
         <ChatScreen user={user}
-          onAdmin={(user?.is_admin || user?.role === 'admin') ? () => setScreen('admin') : null}
-          onLogout={handleLogout} />
+          onAdmin={isAdmin ? () => setScreen('admin') : null}
+          onLogout={handleLogout}
+          onRewatch={() => setScreen('onboard')} />
       )}
       {screen === 'admin' && (
-        <AdminScreen user={user} onBack={() => setScreen('chat')} onLogout={handleLogout} />
+        <AdminScreen user={user} onBack={() => setScreen('chat')} onLogout={handleLogout} onRewatch={() => setScreen('onboard')} />
       )}
     </div>
   );

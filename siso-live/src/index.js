@@ -32,6 +32,16 @@ const { spendingGuard } = require('./middleware/spendingGuard');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Safety net for any promise rejection that isn't caught locally.
+process.on('unhandledRejection', (reason) => {
+  logger.error({ err: reason }, 'Unhandled promise rejection');
+});
+
+// We run behind exactly one reverse proxy hop (Vercel's edge). Without this,
+// express-rate-limit can't trust X-Forwarded-For to reflect the real client,
+// either throwing or silently keying every request off one shared IP.
+app.set('trust proxy', 1);
+
 // ============================================
 // SECURITY MIDDLEWARE
 // Decision: Helmet adds 14 security headers automatically.
@@ -40,8 +50,22 @@ const PORT = process.env.PORT || 3001;
 // ============================================
 app.use(helmet());
 
+// Fail closed in production: the localhost fallback exists only for local
+// dev. If ALLOWED_ORIGINS isn't set in production, refuse to start rather
+// than silently trusting localhost with credentials.
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+if (process.env.NODE_ENV === 'production' && (!allowedOrigins || allowedOrigins.length === 0)) {
+  throw new Error(
+    'ALLOWED_ORIGINS must be set in production (comma-separated list of trusted origins). ' +
+    'Refusing to start with an open/localhost CORS fallback.'
+  );
+}
+
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
+  origin: allowedOrigins || ['http://localhost:3000'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -63,8 +87,11 @@ app.use(requestLogger);
 // Decision: 50 queries/day per user, 10/minute global.
 // Prevents runaway costs and ensures fair usage.
 // If one person hammers the API, others aren't affected.
+//
+// Mounted AFTER authenticateToken (see ROUTES section below) so req.user
+// is populated before the limiter's keyGenerator runs — otherwise every
+// request keys on req.ip and the whole org shares one bucket.
 // ============================================
-app.use('/api/chat', rateLimiter);
 
 // ============================================
 // SPENDING GUARD
@@ -72,8 +99,9 @@ app.use('/api/chat', rateLimiter);
 // If we approach the limit, queries return a friendly
 // "capacity reached" message instead of failing silently.
 // AbbVie's CFO will love this when you explain it.
+//
+// Also mounted after authenticateToken, alongside the rate limiter, below.
 // ============================================
-app.use('/api/chat', spendingGuard);
 
 // ============================================
 // ROUTES
@@ -82,7 +110,7 @@ app.use('/api/chat', spendingGuard);
 // Admin routes (admin role required): /api/admin
 // ============================================
 app.use('/api/auth', authRoutes);
-app.use('/api/chat', authenticateToken, chatRoutes);
+app.use('/api/chat', authenticateToken, rateLimiter, spendingGuard, chatRoutes);
 app.use('/api/upload', authenticateToken, uploadRoutes);
 app.use('/api/admin', authenticateToken, adminRoutes);
 
@@ -96,13 +124,14 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Global error handler — catches anything that slips through
+// Global error handler — catches anything that slips through.
+// Always return a generic message to the client; the full error is logged
+// server-side via the existing logger. This avoids leaking DB/driver
+// internals if NODE_ENV is ever misconfigured in production.
 app.use((err, req, res, next) => {
   logger.error({ err, url: req.url, method: req.method }, 'Unhandled error');
   res.status(err.status || 500).json({
-    error: process.env.NODE_ENV === 'production'
-      ? 'An unexpected error occurred'
-      : err.message,
+    error: 'An unexpected error occurred',
   });
 });
 

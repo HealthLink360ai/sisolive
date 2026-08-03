@@ -18,8 +18,35 @@
 
 const jwt = require('jsonwebtoken');
 const { logger } = require('../utils/logger');
+const { getRedis } = require('../config/redis');
 
-function authenticateToken(req, res, next) {
+// Refuse to boot with a missing, too-short, or still-placeholder JWT secret —
+// any of those means anyone can forge admin tokens, so this must fail loudly
+// at startup rather than accepting bad tokens later.
+const JWT_SECRET_PLACEHOLDER = 'change_this_to_a_random_32_char_string_minimum';
+const MIN_JWT_SECRET_LENGTH = 32;
+
+function assertValidJwtSecret(secret) {
+  if (!secret) {
+    throw new Error(
+      'JWT_SECRET is not set. Set a random string of at least 32 characters in your environment (see .env.example).'
+    );
+  }
+  if (secret.length < MIN_JWT_SECRET_LENGTH) {
+    throw new Error(
+      `JWT_SECRET is too short (${secret.length} chars). It must be at least ${MIN_JWT_SECRET_LENGTH} characters.`
+    );
+  }
+  if (secret === JWT_SECRET_PLACEHOLDER) {
+    throw new Error(
+      'JWT_SECRET is still set to the placeholder value from .env.example. Replace it with a real random secret before starting the server.'
+    );
+  }
+}
+
+assertValidJwtSecret(process.env.JWT_SECRET);
+
+async function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // "Bearer <token>"
 
@@ -32,8 +59,34 @@ function authenticateToken(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Session revocation check: a password reset writes
+    // session_revoked:<userId> to Redis with a timestamp (ms) that's newer
+    // than any JWT issued before the reset, so already-issued tokens for a
+    // just-reset account get rejected instead of staying valid for a full 24h.
+    //
+    // This is defense-in-depth on top of the primary JWT-signature check
+    // above, not the primary auth gate itself — so unlike spendingGuard/
+    // rateLimit (which fail closed), we deliberately FAIL OPEN here: if
+    // Redis is unavailable we let the request through and just log a
+    // warning, rather than taking down all authentication over a Redis blip.
+    try {
+      const redis = getRedis();
+      if (redis) {
+        const revokedAt = await redis.get(`session_revoked:${decoded.id}`);
+        if (revokedAt && parseInt(revokedAt, 10) > decoded.iat * 1000) {
+          return res.status(401).json({
+            error: 'Your session has expired. Please sign in again.',
+            code: 'SESSION_REVOKED',
+          });
+        }
+      }
+    } catch (redisError) {
+      logger.warn({ error: redisError.message }, 'Session revocation check failed — failing open');
+    }
+
     req.user = decoded; // { id, email, name, role, department }
-    
+
     // Log every authenticated request for audit trail
     logger.info({
       userId: decoded.id,
