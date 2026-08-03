@@ -71,7 +71,7 @@ export default function LoginScreen({ onLogin, signedOut, onDismissSignedOut }) 
       </div>
 
       <div className="login-bot">
-        <img src="assets/abbvie-bot-2.png" alt="AbbVie assistant" />
+        <img src="assets/abbviebot3.png" alt="AbbVie assistant" />
       </div>
 
       <div className="login-right fade-up" style={{ padding: "32px 36px 32px 6px" }}>
