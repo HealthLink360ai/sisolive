@@ -28,7 +28,9 @@
 const bcrypt = require('bcryptjs');
 const { Pool } = require('pg');
 
-const email = process.env.ACCOUNT_EMAIL;
+// Lowercased to match auth.routes.js, which queries by email.toLowerCase() —
+// storing any other case here would make login silently fail to match.
+const email = process.env.ACCOUNT_EMAIL?.toLowerCase();
 const password = process.env.ACCOUNT_PASSWORD;
 const name = process.env.ACCOUNT_NAME || email?.split('@')[0];
 const role = process.env.ACCOUNT_ROLE || 'admin';

@@ -1,10 +1,31 @@
+import { useEffect, useRef, useState } from 'react';
+import VimeoPlayer from '@vimeo/player';
 import Icons from '../icons/Icons.jsx';
 import OnboardStepCard from './OnboardStepCard';
 
 const VIMEO_EMBED = 'https://player.vimeo.com/video/1215281143?title=0&byline=0&portrait=0&badge=0&controls=0';
 
-// Ported verbatim from index.html (~lines 3027-3097)
+// Ported verbatim from index.html (~lines 3027-3097), plus a custom play
+// overlay: the embed has controls=0 (no visible player UI), so without
+// this there would be no way to start playback — the video would just
+// sit frozen on its first frame.
 export default function OnboardScreen({ user, onEnter }) {
+  const iframeRef = useRef(null);
+  const playerRef = useRef(null);
+  const [playing, setPlaying] = useState(false);
+
+  useEffect(() => {
+    const player = new VimeoPlayer(iframeRef.current);
+    playerRef.current = player;
+    player.on('ended', () => setPlaying(false));
+    return () => player.unload().catch(() => {});
+  }, []);
+
+  const handlePlay = () => {
+    playerRef.current?.play().catch(() => {});
+    setPlaying(true);
+  };
+
   return (
     <div className="onboard-screen">
       <div className="onboard-inner fade-up">
@@ -29,11 +50,19 @@ export default function OnboardScreen({ user, onEnter }) {
         <div className="onboard-video-hero">
           <div className="onboard-video-embed">
             <iframe
+              ref={iframeRef}
               src={VIMEO_EMBED}
               allow="autoplay; fullscreen; picture-in-picture"
               allowFullScreen
               title="SISO Live! Supplier Inclusion & Sustainability Overview"
             />
+            {!playing && (
+              <button type="button" className="onboard-video-play" onClick={handlePlay} aria-label="Play video">
+                <div>
+                  <div style={{ width: 22, height: 22, marginLeft: 3 }}><Icons.play /></div>
+                </div>
+              </button>
+            )}
           </div>
           <div className="onboard-video-caption">
             <div style={{ width: 9, height: 9 }}><Icons.spark /></div>
