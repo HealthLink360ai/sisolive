@@ -3,7 +3,7 @@ import VimeoPlayer from '@vimeo/player';
 import Icons from '../icons/Icons.jsx';
 import OnboardStepCard from './OnboardStepCard';
 
-const VIMEO_EMBED = 'https://player.vimeo.com/video/1215281143?title=0&byline=0&portrait=0&badge=0&controls=0';
+const VIMEO_EMBED = 'https://player.vimeo.com/video/1215576506?title=0&byline=0&portrait=0&badge=0&controls=0';
 
 // Ported verbatim from index.html (~lines 3027-3097), plus a custom play
 // overlay: the embed has controls=0 (no visible player UI), so without
@@ -34,7 +34,7 @@ export default function OnboardScreen({ user, onEnter }) {
             <img src="assets/abbvie-logo-navy.png" alt="AbbVie" style={{ height: 22, mixBlendMode: 'multiply' }} />
             <span className="name">SISO <em>Live!</em></span>
           </div>
-          <div className="onboard-skip-link" onClick={onEnter}>
+          <div className="onboard-skip-link" onClick={onEnter} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && onEnter()}>
             Skip <div style={{ width: 11, height: 11 }}><Icons.arrow /></div>
           </div>
         </div>

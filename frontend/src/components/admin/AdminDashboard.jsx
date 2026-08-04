@@ -14,15 +14,9 @@ import { AdminAPI } from '../../api/admin.js';
    escalationRate, monthlySpend, avgConfidence, topQueries,
    knowledgeGaps, insightLabels, ... }. `activeUsers` is now computed
    from query activity rather than logins on the backend — no
-   frontend change needed, the field is rendered as-is.
-
-   `monthlySpend` is a real backend-computed field (from
-   spend_tracking / estimated_cost_usd) that the original static
-   mockup never surfaced in the metrics grid — added here as a
-   fifth metric card. The shared `.metrics-grid` class is a fixed
-   4-column grid (used by AdminUsers/AdminEscalations/AdminFeedback
-   too), so the column count is overridden inline here rather than
-   changing the shared rule.
+   frontend change needed, the field is rendered as-is. `monthlySpend`
+   is a real backend field but is intentionally not shown here per
+   request — this component just doesn't render it.
 
    Audit fixes applied vs. the original markup:
    - Removed the "REVIEW" static text label on knowledge-gap rows
@@ -72,8 +66,6 @@ export default function AdminDashboard() {
   const totalQueries = s.totalQueries ?? s.query_count ?? '—';
   const avgConf = s.avgConfidence ?? s.avg_confidence ?? '—';
   const escalationRate = s.escalationRate ?? s.escalation_rate ?? '—';
-  const monthlySpend = s.monthlySpend ?? s.monthly_spend ?? '—';
-  const monthlyBudget = s.monthlyBudget ?? s.monthly_budget ?? null;
   const topQueries = s.topQueries || s.top_queries || [];
   const knowledgeGaps = s.knowledgeGaps || s.knowledge_gaps || [];
   const insightLabels = s.insightLabels || {};
@@ -85,7 +77,7 @@ export default function AdminDashboard() {
 
   return (
     <>
-      <div className="metrics-grid" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
+      <div className="metrics-grid">
         <div className="metric">
           <div className="metric-head">
             <div className="metric-lbl">Active users</div>
@@ -121,14 +113,6 @@ export default function AdminDashboard() {
             {escalationRate !== '—' ? <>{escalationRate}<span className="pct">%</span></> : '—'}
           </div>
           <div className="metric-foot"><span>sent to support</span></div>
-        </div>
-        <div className="metric">
-          <div className="metric-head">
-            <div className="metric-lbl">Monthly spend</div>
-            <div className="metric-ic"><Icons.dollar /></div>
-          </div>
-          <div className="metric-val">{monthlySpend !== '—' ? <>${monthlySpend}</> : '—'}</div>
-          <div className="metric-foot"><span>{monthlyBudget ? `of $${monthlyBudget} budget` : 'this month'}</span></div>
         </div>
       </div>
 

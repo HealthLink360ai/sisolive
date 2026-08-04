@@ -21,16 +21,31 @@ import AdminUserDetail from './AdminUserDetail.jsx';
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [selectedUserId, setSelectedUserId] = useState(null);
 
   useEffect(() => {
     AdminAPI.getUsers()
-      .then(d => { setUsers(Array.isArray(d) ? d : (d.users || [])); setLoading(false); })
-      .catch(() => setLoading(false));
+      .then(d => { setUsers(Array.isArray(d) ? d : (d.users || [])); setError(''); setLoading(false); })
+      .catch((e) => { setError(e.message || 'User data is temporarily unavailable.'); setLoading(false); });
   }, []);
 
   if (loading) {
     return <div style={{ padding: 40, color: 'var(--text-3)', fontFamily: 'var(--mono)', fontSize: 13, textAlign: 'center' }}>Loading users…</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="panel" style={{ gridColumn: '1 / -1' }}>
+        <div className="panel-head">
+          <div className="panel-title"><span className="panel-title-ic"><Icons.alert /></span>Users <em>unavailable</em></div>
+          <span className="panel-tag">CHECK SESSION OR API</span>
+        </div>
+        <div style={{ padding: '32px 24px', color: 'var(--text-2)', fontSize: 14, lineHeight: 1.55 }}>
+          {error}
+        </div>
+      </div>
+    );
   }
 
   if (users.length === 0) {

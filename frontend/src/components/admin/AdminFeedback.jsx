@@ -19,11 +19,12 @@ import { AdminAPI } from '../../api/admin.js';
 export default function AdminFeedback() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     AdminAPI.getFeedback()
-      .then(d => { setItems(Array.isArray(d) ? d : []); setLoading(false); })
-      .catch(() => setLoading(false));
+      .then(d => { setItems(Array.isArray(d) ? d : []); setError(''); setLoading(false); })
+      .catch((e) => { setError(e.message || 'Feedback data is temporarily unavailable.'); setLoading(false); });
   }, []);
 
   const helpful = items.filter(it => it.rating === 'up' || it.rating === 1 || it.rating === true).length;
@@ -35,6 +36,20 @@ export default function AdminFeedback() {
     const d = new Date(s);
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
+
+  if (error) {
+    return (
+      <div className="panel" style={{ gridColumn: '1 / -1' }}>
+        <div className="panel-head">
+          <div className="panel-title"><span className="panel-title-ic"><Icons.alert /></span>Feedback <em>unavailable</em></div>
+          <span className="panel-tag">CHECK SESSION OR API</span>
+        </div>
+        <div style={{ padding: '32px 24px', color: 'var(--text-2)', fontSize: 14, lineHeight: 1.55 }}>
+          {error}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

@@ -59,6 +59,25 @@ function isSimilarQuestion(a, b) {
   return shared / smaller >= 0.67;
 }
 
+// Merges rows whose questions are near-duplicates (different phrasing of the
+// same underlying question) so admin panels show one representative row with
+// a combined count, rather than several fragmented low-count rows. Rows
+// should already be sorted by count desc — the highest-count phrasing in
+// each cluster becomes that cluster's label.
+function mergeSimilarQuestions(rows) {
+  const merged = [];
+  for (const row of rows) {
+    const count = parseInt(row.count);
+    const existing = merged.find(m => isSimilarQuestion(m.question, row.question));
+    if (existing) {
+      existing.count += count;
+    } else {
+      merged.push({ question: row.question, count });
+    }
+  }
+  return merged.sort((a, b) => b.count - a.count);
+}
+
 // GET /api/admin/stats + /api/admin/dashboard — summary metrics
 async function dashboardHandler(req, res) {
   const currentMonth = new Date().toISOString().slice(0, 7);
@@ -77,7 +96,7 @@ async function dashboardHandler(req, res) {
           AND answer IS NOT NULL
         GROUP BY question
         ORDER BY count DESC
-        LIMIT 10
+        LIMIT 50
       `),
       query(`
         SELECT question, COUNT(*) AS count
@@ -86,24 +105,35 @@ async function dashboardHandler(req, res) {
           AND (was_escalated = true OR confidence_score < 0.25)
         GROUP BY question
         ORDER BY count DESC
-        LIMIT 10
+        LIMIT 50
       `),
     ]);
 
     const totalQueries = parseInt(queries.rows[0].count);
     const totalEscalations = parseInt(escalations.rows[0].count);
-    const topQRows = topQueriesResult.rows.filter(r => isDomainRelevantQuestion(r.question));
-    const maxCount = topQRows.length > 0 ? parseInt(topQRows[0].count) : 1;
-    const topQueries = topQRows.map(r => [
+
+    // "Answered demand" stays curated to genuine domain topics — a stray
+    // off-topic test question shouldn't clutter what this panel is for.
+    const topQMerged = mergeSimilarQuestions(topQueriesResult.rows)
+      .filter(r => isDomainRelevantQuestion(r.question))
+      .slice(0, 10);
+    const maxCount = topQMerged.length > 0 ? topQMerged[0].count : 1;
+    const topQueries = topQMerged.map(r => [
       r.question,
-      parseInt(r.count),
-      Math.max(8, Math.round((parseInt(r.count) / maxCount) * 100)),
+      r.count,
+      Math.max(8, Math.round((r.count / maxCount) * 100)),
     ]);
 
-    const knowledgeGaps = gapsResult.rows
-      .filter(r => isDomainRelevantQuestion(r.question))
-      .filter(r => !topQRows.some(top => isSimilarQuestion(r.question, top.question)))
-      .map(r => [r.question, parseInt(r.count)]);
+    // "Needs review" is deliberately NOT filtered by isDomainRelevantQuestion —
+    // that filter is a crude keyword allowlist that can silently hide real
+    // content gaps (a natural follow-up question rarely repeats a keyword like
+    // "supplier" or "sourcing"). This is the one panel whose entire purpose is
+    // surfacing what's missing, so admins should see everything that actually
+    // escalated or scored low, and judge relevance themselves.
+    const knowledgeGaps = mergeSimilarQuestions(gapsResult.rows)
+      .filter(r => !topQMerged.some(top => isSimilarQuestion(r.question, top.question)))
+      .slice(0, 10)
+      .map(r => [r.question, r.count]);
 
     res.json({
       activeUsers: parseInt(users.rows[0].count),
@@ -157,7 +187,11 @@ router.get('/analytics/escalations', async (req, res) => {
       ORDER BY q.created_at DESC
       LIMIT 50
     `);
-    res.json(result.rows.filter(r => isDomainRelevantQuestion(r.question)));
+    // No domain-relevance filter here — this is the raw escalation list, and
+    // admins should see everything that escalated, not have some silently
+    // dropped by a keyword heuristic. See dashboardHandler's knowledgeGaps
+    // for the same reasoning.
+    res.json(result.rows);
   } catch (error) {
     logger.error({ error }, 'Escalations fetch failed');
     res.status(500).json({ error: 'Failed to load escalations' });

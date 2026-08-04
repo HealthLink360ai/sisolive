@@ -47,8 +47,8 @@ export default function LoginScreen({ onLogin, signedOut, onDismissSignedOut }) 
           </h1>
           <p className="login-sub">
             SISO Live! helps AbbVie teams access verified guidance, build
-            confidence, and make faster decisions across supplier inclusion
-            and sustainability work.
+            confidence, and make faster decisions across Supplier Inclusion
+            & Sustainability work.
           </p>
           <div className="login-feats">
             <div className="login-feat f-1">
@@ -96,17 +96,17 @@ export default function LoginScreen({ onLogin, signedOut, onDismissSignedOut }) 
             )}
 
             <div className="field">
-              <div className="field-label"><span>Work email</span></div>
-              <input className="field-inp" type="email" placeholder="firstname.lastname@abbvie.com"
+              <label className="field-label" htmlFor="login-email"><span>Work email</span></label>
+              <input id="login-email" className="field-inp" type="email" placeholder="firstname.lastname@abbvie.com"
                 value={email} onChange={(e) => setEmail(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleLogin()} />
             </div>
 
             <div className="field">
-              <div className="field-label">
+              <label className="field-label" htmlFor="login-password">
                 <span>Password</span>
-              </div>
-              <input className="field-inp" type="password" placeholder="••••••••••••"
+              </label>
+              <input id="login-password" className="field-inp" type="password" placeholder="••••••••••••"
                 value={pass} onChange={(e) => setPass(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleLogin()} />
             </div>
