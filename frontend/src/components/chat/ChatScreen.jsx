@@ -28,10 +28,26 @@ import { parseAnswer, cleanSourceName } from '../../utils/answerParsing.js';
       3361-3364) rendered unconditionally in the source, including
       during/after an escalated or low-confidence response. Here it
       only renders once the conversation has at least one real
-      answered (non-escalated, confident) message, and is suppressed
-      whenever the most recent AI response was an escalation.
+      answered (non-escalated) message, and is suppressed whenever
+      the most recent AI response was an escalation.
    4. The dead `chars: null` field (source ~line 3253), set on the
       error-message object but never read anywhere, was dropped.
+   5. Fixed a real correctness bug found in a pre-delivery QA pass:
+      this component used to additionally gate real-answer rendering
+      on `conf >= 45`, a threshold invented client-side that doesn't
+      exist anywhere in the backend. The backend's own confidence
+      threshold defaults to 0.25 (capped at 0.35 even if configured
+      higher — see retrieval.service.js), and `shouldEscalate` is only
+      ever true for zero-retrieved-chunks, an out-of-scope question,
+      or Claude's own judgment that context is insufficient — never
+      based on the raw score crossing 45%. A legitimate, fully
+      generated, backend-approved answer routinely carries a
+      confidence in the 25-44% range, and the old `>= 45` gate would
+      silently discard it client-side and show the "contact support"
+      escalation card instead, even though the backend never asked
+      for that. `shouldEscalate` (here: `msg.escalated`) is now the
+      sole signal for which card renders — `msg.conf` is displayed as
+      informational data only, never used to decide what to show.
    ============================================================ */
 export default function ChatScreen({ user, onAdmin, onLogout, onRewatch }) {
   const initials = user ? (user.initials || (user.name || '').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'U') : 'U';
@@ -59,10 +75,10 @@ export default function ChatScreen({ user, onAdmin, onLogout, onRewatch }) {
   // non-escalated answer exists in the conversation, and it must be suppressed
   // during/right after an escalation (i.e. when the latest AI reply escalated).
   const hasAnsweredMessage = messages.some(
-    (m) => m.role === 'ai' && m.conf !== null && !m.escalated && m.conf >= 45
+    (m) => m.role === 'ai' && m.conf !== null && !m.escalated
   );
   const lastAiMessage = [...messages].reverse().find((m) => m.role === 'ai');
-  const lastWasEscalated = !!lastAiMessage && lastAiMessage.conf !== null && (lastAiMessage.escalated || lastAiMessage.conf < 45);
+  const lastWasEscalated = !!lastAiMessage && lastAiMessage.conf !== null && lastAiMessage.escalated;
   const showVerifiedBadge = hasAnsweredMessage && !lastWasEscalated;
 
   const sendMessage = async (text) => {
@@ -87,11 +103,11 @@ export default function ChatScreen({ user, onAdmin, onLogout, onRewatch }) {
           : (answer ? 95 : 60);
       const escalated = result.shouldEscalate === true;
       // Extract source: try parsed text first, then top API source
-      const { sourceInText } = parseAnswer((!escalated && conf >= 45) ? answer : null);
+      const { sourceInText } = parseAnswer(!escalated ? answer : null);
       const apiSource = result.sources?.[0]?.filename || null;
       setMessages((m) => [...m, {
         id: result.queryId || Date.now() + 1, role: 'ai',
-        text: (!escalated && conf >= 45) ? answer : null,
+        text: !escalated ? answer : null,
         conf, escalated,
         source: sourceInText || apiSource || null,
         nudge: result.nudge || null,
@@ -114,22 +130,33 @@ export default function ChatScreen({ user, onAdmin, onLogout, onRewatch }) {
 
   const setFeedback = (id, val) => {
     setMessages((m) => m.map((msg) =>
-      msg.id === id ? { ...msg, feedback: val, showComment: val === 'down' } : msg
+      msg.id === id ? { ...msg, feedback: val, showComment: val === 'down', feedbackError: false } : msg
     ));
     // For thumbs-up, log immediately (no comment needed).
     // For thumbs-down, wait for submitComment so the comment is included.
     if (val !== 'down') {
       const msg = messages.find(m => m.id === id);
-      if (msg) ChatAPI.feedback(id, val, '').catch(() => {});
+      if (msg) {
+        // "Thanks, logged" is only ever shown once this actually resolves —
+        // a failed request now flips feedbackError so the UI reflects what
+        // really happened instead of unconditionally claiming success.
+        ChatAPI.feedback(id, val, '').catch(() => {
+          setMessages((m) => m.map((msg) => msg.id === id ? { ...msg, feedbackError: true } : msg));
+        });
+      }
     }
   };
 
   const submitComment = (id) => {
     const msg = messages.find(m => m.id === id);
-    if (msg) ChatAPI.feedback(id, 'down', msg.comment).catch(() => {});
     setMessages((m) => m.map((msg) =>
-      msg.id === id ? { ...msg, showComment: false } : msg
+      msg.id === id ? { ...msg, showComment: false, feedbackError: false } : msg
     ));
+    if (msg) {
+      ChatAPI.feedback(id, 'down', msg.comment).catch(() => {
+        setMessages((m) => m.map((msg) => msg.id === id ? { ...msg, feedbackError: true } : msg));
+      });
+    }
   };
 
   const updateComment = (id, val) => {
@@ -154,7 +181,7 @@ export default function ChatScreen({ user, onAdmin, onLogout, onRewatch }) {
         </div>
         <div className="nav-links">
           <div className="nav-link active">Learning tool</div>
-          {onAdmin && <div className="nav-link" onClick={onAdmin}>Admin dashboard</div>}
+          {onAdmin && <div className="nav-link" onClick={onAdmin} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && onAdmin()}>Admin dashboard</div>}
         </div>
         <div className="nav-right">
           <div className="nav-status">
@@ -187,7 +214,7 @@ export default function ChatScreen({ user, onAdmin, onLogout, onRewatch }) {
             <div className="sidebar-sec">Start here <span className="cnt">{chips.length}</span></div>
             <div className="sidebar-chips">
               {chips.map((c, i) => (
-                <div key={c} className="sidebar-chip" onClick={() => sendMessage(c)}>
+                <div key={c} className="sidebar-chip" onClick={() => sendMessage(c)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && sendMessage(c)}>
                   <span className="chip-mark">0{i + 1}</span>
                   <span>{c}</span>
                 </div>
@@ -248,7 +275,7 @@ export default function ChatScreen({ user, onAdmin, onLogout, onRewatch }) {
                       </div>
                     )}
 
-                    {msg.conf !== null && !msg.escalated && msg.conf >= 45 && (() => {
+                    {msg.conf !== null && !msg.escalated && (() => {
                       const { sourceInText } = parseAnswer(msg.text);
                       const displaySource = cleanSourceName(sourceInText || msg.source);
                       return (
@@ -273,7 +300,7 @@ export default function ChatScreen({ user, onAdmin, onLogout, onRewatch }) {
                       );
                     })()}
 
-                    {msg.conf !== null && (msg.escalated || msg.conf < 45) && (
+                    {msg.conf !== null && msg.escalated && (
                       <div className="ai-card">
                         <div className="ai-card-body low-conf">
                           I don't have enough verified information to answer this confidently. For accurate guidance, please reach out to the SISO support desk. They're the right resource for this.
@@ -306,10 +333,17 @@ export default function ChatScreen({ user, onAdmin, onLogout, onRewatch }) {
                           <div style={{ width: 14, height: 14 }}><Icons.thumbdown /></div>
                         </button>
                         {(msg.feedback === 'up' || (msg.feedback === 'down' && !msg.showComment)) && (
-                          <span className="fb-thanks">
-                            <div style={{ width: 11, height: 11 }}><Icons.check /></div>
-                            Thanks, logged
-                          </span>
+                          msg.feedbackError ? (
+                            <span className="fb-thanks" style={{ color: 'var(--signal)' }}>
+                              <div style={{ width: 11, height: 11 }}><Icons.alert /></div>
+                              Couldn't save — try again
+                            </span>
+                          ) : (
+                            <span className="fb-thanks">
+                              <div style={{ width: 11, height: 11 }}><Icons.check /></div>
+                              Thanks, logged
+                            </span>
+                          )
                         )}
                       </div>
                     )}
@@ -327,7 +361,7 @@ export default function ChatScreen({ user, onAdmin, onLogout, onRewatch }) {
                       </div>
                     )}
 
-                    {!msg.escalated && msg.conf >= 45 && msg.nudge && (
+                    {!msg.escalated && msg.conf !== null && msg.nudge && (
                       <div className="nudge" onClick={() => sendMessage(msg.nudge)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && sendMessage(msg.nudge)}>
                         <div className="nudge-ic"><div style={{ width: 16, height: 16 }}><Icons.sparkles /></div></div>
                         <span>{msg.nudge}</span>
@@ -335,7 +369,7 @@ export default function ChatScreen({ user, onAdmin, onLogout, onRewatch }) {
                       </div>
                     )}
 
-                    {msg.conf !== null && (msg.escalated || msg.conf < 45) && (
+                    {msg.conf !== null && msg.escalated && (
                       <div className="escalate-card">
                         <div className="escalate-ic"><div style={{ width: 16, height: 16 }}><Icons.headset /></div></div>
                         <div className="escalate-body">
@@ -383,7 +417,7 @@ export default function ChatScreen({ user, onAdmin, onLogout, onRewatch }) {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && !typing && sendMessage()} />
                 <div className="chat-input-actions">
-                  <button className="send-btn" onClick={() => sendMessage()} disabled={typing || !input.trim()}>
+                  <button className="send-btn" onClick={() => sendMessage()} disabled={typing || !input.trim()} aria-label="Send message">
                     <div style={{ width: 14, height: 14 }}><Icons.send /></div>
                   </button>
                 </div>
@@ -433,7 +467,7 @@ export default function ChatScreen({ user, onAdmin, onLogout, onRewatch }) {
               {typing ? 'Searching verified sources…' : 'Idle · ready to help'}
             </div>
             <p className="assistant-caption">
-              SISO Live searches AbbVie sources and shows the best verified answer it can support.
+              SISO Live! searches AbbVie sources and shows the best verified answer it can support.
             </p>
           </div>
         </aside>

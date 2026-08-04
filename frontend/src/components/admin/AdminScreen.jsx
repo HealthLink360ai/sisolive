@@ -83,7 +83,8 @@ export default function AdminScreen({ user, onBack, onLogout, onRewatch }) {
             <Fragment key={item.id}>
               {item.section && <div className="admin-sec">{item.section}</div>}
               <div className={`admin-item ${activeTab === item.id ? 'active' : ''}`}
-                onClick={() => setActiveTab(item.id)}>
+                onClick={() => setActiveTab(item.id)}
+                role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setActiveTab(item.id)}>
                 <span className="ai-ic">{Icons[item.icon]?.()}</span>
                 <span style={{ flex: 1 }}>{item.label}</span>
               </div>

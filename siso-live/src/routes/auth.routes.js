@@ -71,7 +71,7 @@ router.post('/login', loginLimiter, async (req, res) => {
 
     res.json({
       token,
-      user: { id: user.id, email: user.email, name: user.name, role: user.role, firstLogin: user.first_login },
+      user: { id: user.id, email: user.email, name: user.name, role: user.role, department: user.department, firstLogin: user.first_login },
     });
   } catch (error) {
     logger.error({ error }, 'Login failed');

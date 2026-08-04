@@ -34,7 +34,7 @@ export default function OnboardScreen({ user, onEnter }) {
             <img src="assets/abbvie-logo-navy.png" alt="AbbVie" style={{ height: 22, mixBlendMode: 'multiply' }} />
             <span className="name">SISO <em>Live!</em></span>
           </div>
-          <div className="onboard-skip-link" onClick={onEnter}>
+          <div className="onboard-skip-link" onClick={onEnter} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && onEnter()}>
             Skip <div style={{ width: 11, height: 11 }}><Icons.arrow /></div>
           </div>
         </div>

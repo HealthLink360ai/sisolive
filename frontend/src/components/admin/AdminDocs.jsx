@@ -14,14 +14,15 @@ import SystemHealthPanel from './SystemHealthPanel.jsx';
 export default function AdminDocs() {
   const [docs, setDocs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [filter, setFilter] = useState('All documents');
   const [searchTerm, setSearchTerm] = useState('');
   const [reindexing, setReindexing] = useState({});
 
   useEffect(() => {
     AdminAPI.getDocs()
-      .then(d => { setDocs(Array.isArray(d) ? d : (d.documents || d.docs || [])); setLoading(false); })
-      .catch(() => setLoading(false));
+      .then(d => { setDocs(Array.isArray(d) ? d : (d.documents || d.docs || [])); setError(''); setLoading(false); })
+      .catch((e) => { setError(e.message || 'Document data is temporarily unavailable.'); setLoading(false); });
   }, []);
 
   const handleDelete = async (id) => {
@@ -48,6 +49,20 @@ export default function AdminDocs() {
 
   if (loading) {
     return <div style={{ padding: 40, color: 'var(--text-3)', fontFamily: 'var(--mono)', fontSize: 13, textAlign: 'center' }}>Loading documents…</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="panel" style={{ gridColumn: '1 / -1' }}>
+        <div className="panel-head">
+          <div className="panel-title"><span className="panel-title-ic"><Icons.alert /></span>Documents <em>unavailable</em></div>
+          <span className="panel-tag">CHECK SESSION OR API</span>
+        </div>
+        <div style={{ padding: '32px 24px', color: 'var(--text-2)', fontSize: 14, lineHeight: 1.55 }}>
+          {error}
+        </div>
+      </div>
+    );
   }
 
   const needsReindex = docs.some(d => d.has_vectors === false);
@@ -81,7 +96,7 @@ export default function AdminDocs() {
         </div>
         <div className="docs-filters">
           {['All documents', 'Searchable', 'Needs indexing'].map((t) => (
-            <span key={t} className={`docs-chip ${filter === t ? 'on' : ''}`} onClick={() => setFilter(t)}>{t}</span>
+            <span key={t} className={`docs-chip ${filter === t ? 'on' : ''}`} onClick={() => setFilter(t)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setFilter(t)}>{t}</span>
           ))}
         </div>
       </div>
@@ -131,7 +146,7 @@ export default function AdminDocs() {
                         {reindexing[d.id] ? 'Indexing...' : 'Re-index'}
                       </button>
                     )}
-                    <button className="doc-action-btn" onClick={() => handleDelete(d.id)}>
+                    <button className="doc-action-btn" onClick={() => handleDelete(d.id)} aria-label={`Delete ${d.name || d.filename || 'document'}`}>
                       <div style={{ width: 14, height: 14 }}><Icons.close /></div>
                     </button>
                   </div>
