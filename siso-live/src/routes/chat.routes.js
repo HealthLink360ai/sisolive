@@ -5,9 +5,26 @@ const { checkDailyLimit } = require('../middleware/rateLimit');
 const { logger } = require('../utils/logger');
 const router = express.Router();
 
+// conversationHistory is client-supplied and otherwise unbounded — without
+// caps here, a caller hitting the API directly (not through the UI, which
+// only ever sends real prior turns) could pad every request with hundreds
+// of KB of history, multiplying real per-query token cost against the
+// MONTHLY_BUDGET_CAP_USD guarantee. Also strips any role other than
+// user/assistant, since the client fully controls this array — nothing
+// stops a caller from injecting a fake prior "assistant" turn otherwise.
+const MAX_HISTORY_TURNS = 10;
+const MAX_HISTORY_MESSAGE_CHARS = 2000;
+function sanitizeConversationHistory(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((m) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
+    .slice(-MAX_HISTORY_TURNS)
+    .map((m) => ({ role: m.role, content: m.content.slice(0, MAX_HISTORY_MESSAGE_CHARS) }));
+}
+
 // POST /api/chat — main chat endpoint (also accepts /query for backwards compat)
 async function chatHandler(req, res) {
-  const { question, conversationHistory, bypassCache } = req.body;
+  const { question } = req.body;
   const userId = req.user.id;
 
   if (!question || question.trim().length < 3) {
@@ -18,8 +35,14 @@ async function chatHandler(req, res) {
     return res.status(400).json({ error: 'Question too long. Please keep it under 500 characters.' });
   }
 
+  const conversationHistory = sanitizeConversationHistory(req.body.conversationHistory);
+  // Only admins can force a fresh (uncached) generation — bypassing the 24h
+  // answer cache on every request would forfeit the cost savings it exists
+  // for if any authenticated user could flip this.
+  const bypassCache = Boolean(req.body.bypassCache) && req.user.role === 'admin';
+
   try {
-    const result = await handleQuery(question.trim(), userId, conversationHistory || [], { bypassCache: Boolean(bypassCache) });
+    const result = await handleQuery(question.trim(), userId, conversationHistory, { bypassCache });
     res.json(result);
   } catch (error) {
     logger.error({ error, userId, questionLength: question?.length || 0 }, 'Chat query failed');
