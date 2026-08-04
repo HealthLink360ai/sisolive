@@ -3,7 +3,7 @@ import VimeoPlayer from '@vimeo/player';
 import Icons from '../icons/Icons.jsx';
 import OnboardStepCard from './OnboardStepCard';
 
-const VIMEO_EMBED = 'https://player.vimeo.com/video/1215281143?title=0&byline=0&portrait=0&badge=0&controls=0';
+const VIMEO_EMBED = 'https://player.vimeo.com/video/1215576506?title=0&byline=0&portrait=0&badge=0&controls=0';
 
 // Ported verbatim from index.html (~lines 3027-3097), plus a custom play
 // overlay: the embed has controls=0 (no visible player UI), so without
